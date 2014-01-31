@@ -1,7 +1,7 @@
 #==============================================================================
 # ■ 时间流逝
 #  作者：影月千秋
-#  版本：2.3
+#  版本：2.4
 #------------------------------------------------------------------------------
 # ● 简介：
 #   1.本脚本适用于【VX Ace】，用于XP或VX造成的错误本人不提供支持；发现BUG欢迎报告，
@@ -16,6 +16,7 @@
 #  在事件中改变所设定变量和开关，便可以改变时间
 #------------------------------------------------------------------------------
 # ● 版本：
+#   V 2.4 2014.01.31 修正读档时报错的BUG
 #   V 2.3 2014.01.29 可以自定义地图窗体的位置
 #   V 2.2 2013.12.27 修正Window_MoVMe的错误
 #   V 2.1 2013.12.15 修正过卡的BUG
@@ -81,14 +82,15 @@ module MoVTData
       #HM - 游戏中一小时几分钟
     Weeks = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"]
       #Weeks - 设定每个周期日子的名称，有意向的话也可以把所谓“星期”改为其他的周期
-    VTTone = {:Dawn => [240 , Tone.new( -75,-100,   0,  75), "黎明"],
-              :Morn => [360 , Tone.new(   0,   0,   0,   0), "上午"],
-              :Noon => [660 , Tone.new(  50,  50,  10, -30), "中午"],
-              :Aftr => [900 , Tone.new(   0,   0,   0,   0), "下午"],
-              :Sset => [1080, Tone.new(  34, -34, -68, 170), "黄昏"],
-              :Nigt => [1260, Tone.new( -75,-100,   0,  75), "夜晚"],
-              :Dark => [60  , Tone.new(-125,-125, -10, 125), "深夜"]
-              }
+    VTTone = {
+      :Dawn => [240 , Tone.new( -75,-100,   0,  75), "黎明"],
+      :Morn => [360 , Tone.new(   0,   0,   0,   0), "上午"],
+      :Noon => [660 , Tone.new(  50,  50,  10, -30), "中午"],
+      :Aftr => [900 , Tone.new(   0,   0,   0,   0), "下午"],
+      :Sset => [1080, Tone.new(  34, -34, -68, 170), "黄昏"],
+      :Nigt => [1260, Tone.new( -75,-100,   0,  75), "夜晚"],
+      :Dark => [60  , Tone.new(-125,-125, -10, 125), "深夜"]
+    }
       #设置一天各时段的开始时间，1440为一天的长度，240是早上四点（240/1440*24）
       #从上到下：黎明 上午 中午 下午 黄昏 夜晚 深夜
       #后面是设置各时段的色调
@@ -116,14 +118,13 @@ module MoVTData
       # 将参数传递给initialize（通过Window_MoVMe.new）
       super(0, gold_window[0].y - 110, gold_window[0].width, 110)
       draw_text(0, 0, 200, 25, MoVTData::Chro + 
-        $game_variables[MoVTData::TimV[0]].to_s + "年" +
-          $game_variables[MoVTData::TimV[1]].to_s + "月" +
-            $game_variables[MoVTData::TimV[2]].to_s + "日")
-      draw_text(0, 30, 130, 25, MoVTData::Weeks[MoVTData.wdayy], 2)
-      draw_text(0, 60, 160, 25, format("%02d",
-        $game_variables[MoVTData::TimV[3]]) + ":" +
-          format("%02d",$game_variables[MoVTData::TimV[4]]) + "  " +
-            MoVTData.vtzz)
+        "#{$game_variables[MoVTData::TimV[0]]}年" +
+          "#{$game_variables[MoVTData::TimV[1]]}月" +
+            "#{$game_variables[MoVTData::TimV[2]]}日")
+      draw_text(0, 30, 130, 25, MoVTData::Weeks[MoVTData.wday], 2)
+      draw_text(0, 60, 160, 25,
+        format("%02d:", $game_variables[MoVTData::TimV[3]]) +
+          format("%02d  ",$game_variables[MoVTData::TimV[4]]) + MoVTData.vtz)
       draw_icon(MoVTData::Icon, 0, 30) if MoVTData::Icon != 0
     end
   end
@@ -157,24 +158,24 @@ module MoVTData
       if MoVTData::Icon != 0
         draw_icon(MoVTData::Icon,0,0)
         draw_text(30, 0, 400, 25,MoVTData::Chro +
-          $game_variables[MoVTData::TimV[0]].to_s + "年" +
-            $game_variables[MoVTData::TimV[1]].to_s + "月" +
-              $game_variables[MoVTData::TimV[2]].to_s + "日" + " " +
-                MoVTData::Weeks[MoVTData.wdayy])
+          "#{$game_variables[MoVTData::TimV[0]]}年" +
+            "#{$game_variables[MoVTData::TimV[1]]}月" +
+              "#{$game_variables[MoVTData::TimV[2]]}日" + " " +
+                MoVTData::Weeks[MoVTData.wday])
         draw_text(320, 0, 160, 25,
           format("%02d",$game_variables[MoVTData::TimV[3]]) + ":" +
             format("%02d",$game_variables[MoVTData::TimV[4]]) + " " +
-              MoVTData.vtzz, 2)
+              MoVTData.vtz, 2)
       else
         draw_text(0, 0, 400, 25,MoVTData::Chro +
           $game_variables[MoVTData::TimV[0]].to_s + "年" +
             $game_variables[MoVTData::TimV[1]].to_s + "月" +
               $game_variables[MoVTData::TimV[2]].to_s + "日" + " " +
-                MoVTData::Weeks[MoVTData.wdayy])
+                MoVTData::Weeks[MoVTData.wday])
         draw_text(400, 0, 160, 25,
           format("%02d",$game_variables[MoVTData::TimV[3]]) + ":" +
             format("%02d",$game_variables[MoVTData::TimV[4]]) + " " +
-              MoVTData.vtzz, 2)
+              MoVTData.vtz, 2)
       end # if MoVTData::Icon != 0
     end # def refresh
   end # class Window_MoVCh
@@ -205,7 +206,7 @@ module MoVTData
   def self.refresh
     return if $game_message.visible
     return if $game_switches[Pause]
-    $game_variables[TimV[4]] += 1 if Graphics.frame_count % Spe == 0
+    $game_variables[TimV[4]] += 1
     if $game_variables[TimV[4]] >= HM
       $game_variables[TimV[4]] = 0
       $game_variables[TimV[3]] += 1
@@ -256,7 +257,6 @@ module MoVTData
       @vtz = VTTone[:Dark][2]
     end
   end
-
   def self.cdaynight(t = 60)
     return if !$game_map
     return if !SceneManager::scene_is?(Scene_Map)
@@ -266,14 +266,17 @@ module MoVTData
       $game_map.screen.start_tone_change(@ttone, t)
     end
   end
-  def self.vtzz
+  def self.vtz
     @vtz
   end
-  def self.wdayy
+  def self.vtz=(vtz)
+    @vtz = vtz
+  end
+  def self.wday
     @wday
   end
-  def self.wdaay=(wdaay)
-    @wday = wdaay
+  def self.wday=(wday)
+    @wday = wday
   end
 end
 #==============================================================================
@@ -320,12 +323,14 @@ class << DataManager
   end
   def make_save_contents
     contents = motmsc
-    contents[:vwday] = MoVTData.wdayy
+    contents[:vwday] = MoVTData.wday
+    contents[:vwvtz] = MoVTData.vtz
     contents
   end
   def extract_save_contents(contents)
     motesc(contents)
-    MoVTData.wdaay = contents[:vwday]
+    MoVTData.wday = contents[:vwday]
+    MoVTData.vtz = contents[:vwvtz]
   end
 end
 
