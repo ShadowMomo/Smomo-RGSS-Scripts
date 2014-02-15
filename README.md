@@ -5,6 +5,6 @@ RGSS Scripts of Shadow momo
 ------------------
 
 
-RGSS, which means Ruby Game Scripting System, is usually used in RPG Maker Softwares.
+RGSS, which means Ruby Game Scripting System(ruby based), is usually used in EnterBrain RPG Maker.
 
-Most of the files here are RGSS3 scripts.
+Most of the files here are RGSS3 scripts, suitable for EnterBrain RPG Maker VX Ace.
