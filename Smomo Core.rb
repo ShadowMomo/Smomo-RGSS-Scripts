@@ -2,7 +2,7 @@
 # ■ Smomo脚本核心
 #  作者：影月千秋
 #  版本：V 1.0
-#  最近更新：2014.03.08
+#  最近更新：2014.04.05
 #------------------------------------------------------------------------------
 # ● 简介
 #  Smomo脚本的核心，提供了一些常用功能，有些脚本需要依靠此脚本以正常工作
@@ -11,7 +11,7 @@
 #  插入到其他Smomo脚本上方
 #==============================================================================
 # ● 更新
-#   V 1.0 2014.03.08 新建
+#   V 1.0 2014.04.05 新建
 #==============================================================================
 # ● 声明
 #   本脚本来自【影月千秋】，使用、修改和转载请保留此信息
@@ -44,6 +44,8 @@ $smomo["RGSS Version"] =
 #     ·arrived? 是否已经到达
 #
 # ·web(url = "") 调用浏览器打开网页
+#
+# ·deep_clone(obj) 深度复制对象
 #
 # ·
 #============================================================================
@@ -115,6 +117,11 @@ module Smomo
     eval %Q!`start #{url}`!
   end
   
+  # deep_clone
+  def deep_clone(obj)
+    Marshal.load Marshal.dump obj
+  end
+  
 end # Smomo
 
 
@@ -168,39 +175,39 @@ module Smomo::Mixin
     define_method sym, &append
     append_method = instance_method(sym)
     case type
-    when :a; define_method sym do|*args, &block|
+    when :a; define_method sym do |*args, &block|
         origin_value = origin_method.bind(self).call *args, &block
         append_method.bind(self).call *args, &block
         origin_value
       end
-    when :b; define_method sym do|*args, &block|
+    when :b; define_method sym do |*args, &block|
         append_method.bind(self).call *args, &block
         origin_method.bind(self).call *args, &block
       end
-    when :c; define_method sym do|*args, &block|
+    when :c; define_method sym do |*args, &block|
         append_method.bind(self).call origin_method.bind(self), *args, &block
       end
-    when :v; define_method sym do|*args, &block|
+    when :v; define_method sym do |*args, &block|
         origin_value = origin_method.bind(self).call *args, &block
         append_method.bind(self).call origin_value, *args, &block
       end
-    when :if; define_method sym do|*args, &block|
+    when :if; define_method sym do |*args, &block|
         origin_method.bind(self).call *args, &block if
         append_method.bind(self).call *args, &block
       end
-    when :unless; define_method sym do|*args, &block|
+    when :unless; define_method sym do |*args, &block|
         origin_method.bind(self).call *args, &block unless
         append_method.bind(self).call *args, &block
       end
-    when :ifold; define_method sym do|*args, &block|
+    when :ifold; define_method sym do |*args, &block|
         append_method.bind(self).call *args, &block if
         origin_method.bind(self).call *args, &block
       end
-    when :unlessold; define_method sym do|*args, &block|
+    when :unlessold; define_method sym do |*args, &block|
         append_method.bind(self).call *args, &block unless
         origin_method.bind(self).call *args, &block
       end
-    else; define_method sym do|*args, &block|
+    else; define_method sym do |*args, &block|
         origin_method.bind(self).call *args, &block
       end
     end
