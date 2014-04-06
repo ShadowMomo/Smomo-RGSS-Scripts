@@ -59,9 +59,6 @@ module Smomo::Calendar
    # :top 顶部  :bottom 底部  :none 不使用
    # 如果预设不能满足要求 请自行在下方自定义区更改
   
-  Icon = 234
-  # 时间前的图标 设为0则不显示
-  
   Use = 16
   # 设定占用开关，只有当此开关打开时，才会计时
    # 打开开关前 请确保下方Speed对应的变量不为0
@@ -70,8 +67,7 @@ module Smomo::Calendar
   # 设定占用变量的起始号 会占用以这个号码为开端的连续几个号码对应的游戏变量
   
   # 继续设置需要了解的事实：
-  #  脚本内部计时用一个数字来累加，代表的是经过的总时间（如：总分钟数），只在显示的
-  #   时候进行单位换算（X月X日 XX:XX）
+  #  脚本内部计时用一个数字来累加 然后再依次推进到下一单位 把最开始的数字叫计时变量
   
   Speed = 100
   # 设定游戏时间进行速度占用变量，代表经过多少帧后游戏内部计时变量增加一
@@ -90,7 +86,7 @@ module Smomo::Calendar
   # 设定计时制，最后一个数据的单位与计时变量的单位统一
    # 可以突破公元历法的限制
     # 比如：636号时间线3145纪6887年6月4日 21:39:44:03
-   # 这里有几项 就会占用几个变量
+   # 这里有几项 上面的Var就会占用几个变量
    # 从上往下 单位由小到大 如：分-->时-->日-->月-->年
   
   Start = [56, 19, 5, 4, 2014]
@@ -130,12 +126,12 @@ module Smomo::Calendar
   
   Format = {
     menu: %W!
-            公元<4年>年<2月>月<2日>日
-            <Period>
+            <4年>.<2月>.<2日>
+            \\I[234]___<Period>
             <2时>:<2分>_<Zone>
           !,
     map:  %W!
-            公元<4年>年<2月>月<2日>日___<Period>___<Zone>_<2时>:<2分>
+            \\I[234]公元<4年>年<2月>月<2日>日___<Period>___<Zone>_<2时>:<2分>
           !
   }
   # 输出格式 此处写多少行 游戏内就会依次对应输出多少行
@@ -147,6 +143,8 @@ module Smomo::Calendar
     # <Period> 当前周期的名字（如：星期三）
     # <Zone>   当前时段的名字（如：早晨）
    # 两个符号必须用两对<>分别括起来 不能写在同一对<>内
+    # 允许使用转义字符 但是必须有两个反斜杠
+     # 如 显示图标 \I[3] 应写成 \\I[3]
 end
 
 #==============================================================================
@@ -199,9 +197,8 @@ class Window_MoMenuCalendar < Window_Base
       end
       t.gsub!(/<Period>/){"#{PeriodName[Smomo::Calendar.prd]}"}
       t.gsub!(/<Zone>/){"#{Smomo::Calendar.zone}"}
-      draw_text(0, l * 30, self.contents.width, 25, t, 2)
+      draw_text_ex(0, l * 30, t)
     end
-    draw_icon(Icon, 0, 30)
   end
 end
 #============================================================================
@@ -236,7 +233,6 @@ class Window_MoMapCalendar < Window_Base
     contents.clear
     contents.gradient_fill_rect(0, 0, @sprite.width, @sprite.width,
     Color.new(30, 30, 30), Color.new(0, 0, 0, 0))
-    draw_icon(Smomo::Calendar::Icon, 5, 5)
     format = Smomo.deep_clone(Format[:map])
     format.each_with_index do |t, l|
       t.gsub!(/_/){" "}
@@ -247,7 +243,7 @@ class Window_MoMapCalendar < Window_Base
       end
       t.gsub!(/<Period>/){"#{PeriodName[Smomo::Calendar.prd]}"}
       t.gsub!(/<Zone>/){"#{Smomo::Calendar.zone}"}
-      draw_text(35, l * 30 + 5, @sprite.width, 25, t)
+      draw_text_ex(0, l * 30 + 5, t)
     end
   end
   #------------------------------------------------------------------------
@@ -255,6 +251,9 @@ class Window_MoMapCalendar < Window_Base
   #------------------------------------------------------------------------
   def contents
     @sprite.bitmap
+  end
+  def windowskin
+    Cache.system("Window")
   end
 end
 #=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+#
