@@ -29,7 +29,7 @@ $smomo["RGSS Version"] =
 #----------------------------------------------------------------------------
 # ·text_size(str, font = nil) 确定合适的文字大小(Rect矩形类)
 #
-# moveAE(aim, x = :x, y = :y) 动态移动效果，返回一个移动对象mover
+# ·moveAE(aim, x = :x, y = :y) 动态移动效果，返回一个移动对象mover
 #     aim 被移动的对象 x y 横纵坐标的属性名
 #     ● 该方法需要Smomo::Kit
 #   mover对象：
