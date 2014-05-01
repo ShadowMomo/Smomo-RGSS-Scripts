@@ -1,8 +1,6 @@
 #==============================================================================
 # ■ 变量槽显示
 #  作者：影月千秋
-#  版本：V 1.1
-#  最近更新：2014.02.08
 #  适用：VA
 #------------------------------------------------------------------------------
 # ● 简介
@@ -12,6 +10,7 @@
 #   插入到其他脚本以下，Main以上，按要求在下方设定即可
 #==============================================================================
 # ● 更新
+#   V 1.2 2014.05.01 劳动节 现在支持更丰富的显示效果了
 #   V 1.1 2014.02.08 功能微调
 #   V 1.0 2013.12.?? 新建
 #==============================================================================
@@ -19,107 +18,111 @@
 #   本脚本来自【影月千秋】，使用、修改和转载请保留此信息
 #==============================================================================
 
-if true  # <= 设为 true/false 来 启用/禁用 这个脚本
-
 $smomo ||= {}
-unless $smomo["VarBar"]
-$smomo["VarBar"] = true
+if $smomo["MapVarBar"].nil?
+$smomo["MapVarBar"] = true
 
 #==============================================================================
-# ■ MoVarBar
+# ■ MapVarBar
 #------------------------------------------------------------------------------
 #   变量槽的设定区域
 #==============================================================================
-module Smomo
-module MoVarBar
+module Smomo::MapVarBar
   
-  MAPSWI = 0
+  SWI = 0
   # 游戏中决定是否在地图显示窗口的开关
   # 开关打开时，才会显示 如果设为0 则一直显示
 
-  MAPLOC = 3
+  POS = 3
   # 在地图中变量窗口显示的位置
   #  0不使用 1左上 2左下 3右上 4右下
   
   KEY = :Y
   # 玩家在地图界面显示/隐藏窗口的键，:Y一般为S键，不使用请设为0
+    
+  VAR = [
+  # 填写格式
+  # [当前进度变量, 最大值变量, 附加文本, 基础值, 初始最大值, 进度显示方式, 渐变色1,
+  # 渐变色2, 文本颜色, 进度颜色],
+  # 前三项为必填项
   
-  MENUSW = true
-  # 是否在菜单显示变量窗口
-  # 如果和其他修改了菜单的脚本不兼容请设为false
-  
-  MENUSWI = 0
-  # 游戏中决定是否在菜单显示窗口的开关
-  # 设为0 则一直显示
-  
-  VARC = 1
-  # 控制当前进度的变量ID
-  
-  VARF = 2
-  # 控制最大值的变量ID
-  
-  BASES = 100
-  # 当前进度的基础值
-  # 在计算当前进度时，永远会加上这样一个值
-  
-  BEGINM = 1000
-  # 最大值的初始值
-  # 因为游戏开始时变量值为0，为了避免除数为0，使用了这样的常量
-  # 这个值仅在 由VARF指向的变量 为0时 生效
-  
-  NUMSHOW = true
-  # 是否显示进度值
-  # 进度值就是类似于【64/100】的文字
-  
-  TEXT = "击破数"
-  # 变量槽上方显示的文字
-  
-  BCOLOR1 = 16
-  BCOLOR2 = 12
-  # 变量槽的渐变色 *
-  
-  TCOLOR = 4
-  #文字颜色 *
+  # 变量需要填写变量ID 附加文本形如 "击破数"
+  # 基础值：计算比例时，先把当前值加上基础值再进行计算
+  # 初始最大值：因为游戏开始时变量为0 不能计算比例（除数不为零） 临时使用这个作为
+   # 最大值 当最大值变量不为0时 此值无意义
+  # 进度显示方式：有三种选项
+   # '-'   不显示值 只显示附加文本
+   # '/'   在附加文本后 以 69/731 的方式显示进度
+   # '%'   在附加文本后 以 37.1% 的方式显示进度（精确到一位小数）
+  # 渐变色1 渐变色2 ：描绘值槽使用的渐变颜色*
+  # 文本颜色 进度颜色：描绘附加文本和进度值使用的颜色*
   
   # * 颜色请填写一个整数，参照事件【显示文章】中转义字符【\C[]】的参数
-end # module MoVarBar
-end # module Smomo
-
+  
+  # 非必填项中 如果想只写后面不写前面，就用 nil 占位
+  
+  # 示例
+#~     [1, 2, "击破数", 0, 1000, '/', 16, 12, 4, 9],
+#~     [1, 2, "击破数"],
+#~     [1, 2, "击破数", nil, nil, '%'],
+#~     [1, 2, "击破数", 20, nil, '-', nil, nil, nil, 15],
+    [1, 2, "击破数"],
+    [3, 4, "完成度"],
+    [5, 6, "熟练等级"],
+    [7, 8, "远征", nil, nil, '%'],
+  ] #<-|
+  
+  D_BA = 0    # 默认基础值
+  D_OM = 1000 # 默认初始最大值
+  D_DM = '/'  # 默认进度显示方式
+  D_C1 = 16   # 默认渐变色1
+  D_C2 = 12   # 默认渐变色2
+  D_CT = 4    # 默认文本颜色
+  D_CR = 9    # 默认进度颜色
+  
+  T_TEXT  = "游戏进度"
+  # 在窗口最上方显示的文字 不希望显示的话使用 ""
+  T_COLOR = 2
+  # 如果显示 使用什么颜色
+  
 #=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+#
 #------------------------------------------------------------------------------#
 #                               请勿跨过这块区域                                #
 #------------------------------------------------------------------------------#
 #+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=#
+  VAR.each do |bar|
+    bar[3] ||= D_BA
+    bar[4] ||= D_OM
+    bar[5] ||= D_DM
+    bar[6] ||= D_C1
+    bar[7] ||= D_C2
+    bar[8] ||= D_CT
+    bar[9] ||= D_CR
+  end
+end
 
 #==============================================================================
-# ■ Window_MoVarBar
+# ■ Window_MapVarBar
 #==============================================================================
-class Window_MoVarBar < Window_Base
-  include Smomo::MoVarBar
+class Window_MapVarBar < Window_Base
+  include Smomo::MapVarBar
   #--------------------------------------------------------------------------
   # ● 初始化对象
   #--------------------------------------------------------------------------
-  def initialize(type, gold_window = nil)
-    @type = type
-    case @type
-    when :map
-      case MAPLOC
-      when 1
-        super(0, 20, 160, fitting_height(2) - 20)
-      when 2
-        super(0,Graphics.height - fitting_height(2),160,fitting_height(2) - 20)
-      when 3
-        super(Graphics.width - 160, 20, 160, fitting_height(2) - 20)
-      when 4
-        super(Graphics.width - 160, Graphics.height - fitting_height(2), 160,
-        fitting_height(2) - 20)
-      end
-      self.openness = 0
-      @showing = true
-    when :menu
-      super(gold_window.x,gold_window.y-fitting_height(2)+20,gold_window.width,
-      fitting_height(2) - 20)
+  def initialize
+    fh = fitting_height (T_TEXT == "" ? 0 : 1) + VAR.size
+    case POS
+    when 1
+      super(0, 20, 160, fh)
+    when 2
+      super(0, Graphics.height - fh, 160, fh)
+    when 3
+      super(Graphics.width - 160, 20, 160, fh)
+    when 4
+      super(Graphics.width - 160, Graphics.height - fh, 160, fh)
     end
+    self.openness = 0
+    @showing = true
     refresh
   end
   #--------------------------------------------------------------------------
@@ -127,11 +130,8 @@ class Window_MoVarBar < Window_Base
   #--------------------------------------------------------------------------
   def update
     super
-    return if @type == :menu
-    if Smomo::MoVarBar::MAPSWI == 0 || $game_switches[Smomo::MoVarBar::MAPSWI]
-      if Smomo::MoVarBar::KEY != 0 && Input.trigger?(Smomo::MoVarBar::KEY)
-        @showing = !@showing
-      end
+    if Smomo::MapVarBar::SWI == 0 || $game_switches[Smomo::MapVarBar::SWI]
+      @showing = !@showing if Input.trigger?(Smomo::MapVarBar::KEY)
       if @showing
         open if close?
         refresh if $game_map.need_refresh
@@ -147,74 +147,54 @@ class Window_MoVarBar < Window_Base
   #--------------------------------------------------------------------------
   def refresh
     contents.clear
-    change_color(text_color(TCOLOR))
-    draw_gauge(0, line_height - 20, contents.width, mobarrate,
-    text_color(BCOLOR1), text_color(BCOLOR2))
-    draw_text(0, 0, contents.width, line_height, mobarratetext, 1)
+    unless T_TEXT == ""
+      change_color text_color(T_COLOR)
+      draw_text(0, 0, contents.width, line_height, T_TEXT, 1)
+    end
+    make_font_smaller
+    VAR.each_with_index do |(c, m, t, b, o, d, c1, c2, ct, cr), i|
+      draw(i, c1, c2, ct, cr, t, *make_rate_n_text(d, c, m, b, o))
+    end
+    make_font_bigger
   end
   #--------------------------------------------------------------------------
-  # ● 获取进度值
+  # ● 生成进度值
   #--------------------------------------------------------------------------
-  def mobarratetext
-    TEXT + (NUMSHOW ? ("    " + ($game_variables[VARC] + BASES).to_s + "/" +
-    ($game_variables[VARF] == 0 ? BEGINM : $game_variables[VARF]).to_s) : "")
+  def make_rate_n_text(display, current, max, base, origin_max)
+    c = $game_variables[current] + base
+    m = $game_variables[max] == 0 ? origin_max : $game_variables[max]
+    [rate = c.to_f / m.to_f,
+    case display
+    when '-'; ""
+    when '/'; "#{c}/#{m}"
+    when '%'; "#{(rate * 1000).round.to_f / 10.0}%"
+    end]
   end
   #--------------------------------------------------------------------------
-  # ● 获取进度比
+  # ● 描绘
   #--------------------------------------------------------------------------
-  def mobarrate
-    ($game_variables[VARC] + BASES).to_f / 
-    ($game_variables[VARF] == 0 ? BEGINM : $game_variables[VARF]).to_f
+  def draw(index, c1, c2, ct, cr, text, rate, atext)
+    pos = fitting_height(index - (T_TEXT == "" ? 1 : 0))
+    draw_gauge(0, pos, contents.width, rate, text_color(c1), text_color(c2))
+    change_color(text_color(ct))
+    draw_text(0, pos, contents.width, line_height, text)
+    change_color(text_color(cr))
+    draw_text(0, pos, contents.width, line_height, atext, 2)
   end
 end
 #==============================================================================
 # ■ Scene_Map
 #==============================================================================
 class Scene_Map
-  alias :movarbarcaw :create_all_windows
-  def create_all_windows
-    movarbarcaw
-    create_var_bar_window
-  end
-  #--------------------------------------------------------------------------
-  # ● 创建变量槽窗口
-  #--------------------------------------------------------------------------
-  def create_var_bar_window
-    @var_bar_window = Window_MoVarBar.new(:map) unless
-    Smomo::MoVarBar::MAPLOC == 0
-  end
-end
-#==============================================================================
-# ■ Scene_Menu
-#==============================================================================
-class Scene_Menu
-  alias :movarbarstt :start
-  def start
-    movarbarstt
-    create_var_bar_window
-  end
-  #--------------------------------------------------------------------------
-  # ● 创建变量槽窗口（要求有金钱窗口）
-  #--------------------------------------------------------------------------
-  def create_var_bar_window
-    return unless Smomo::MoVarBar::MENUSW
-    if @gold_window.nil?
-      msgbox "没有@gold_window,不应该继续,请把Smomo::MoVarBar::MENUSW设为false"
-      return
-    end
-    if Smomo::MoVarBar::MENUSWI == 0 || $game_switches[Smomo::MoVarBar::MENUSWI]
-      @var_bar_window = Window_MoVarBar.new(:menu, @gold_window)
-    end
+  _def_ :create_all_windows do
+    @mo_var_bar_window = Window_MapVarBar.new unless Smomo::MapVarBar::POS == 0
   end
 end
 
 else # unless $smomo["VarBar"]
-  msgbox "请不要重复加载此脚本 : )\n(变量槽显示 MoVarBar)"
+  msgbox "请不要重复加载此脚本 : )\n(变量槽显示 MapVarBar)"
 end # unless $smomo["VarBar"]
 
-else # if true
-  p "脚本MoVarBar已被禁用"
-end # if true
 #==============================================================================#
 #=====                        =================================================#
            "■ 脚 本 尾"
