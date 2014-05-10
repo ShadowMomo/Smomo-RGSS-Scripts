@@ -1,8 +1,6 @@
 #==============================================================================
 # ■ Smomo脚本核心
 #  作者：影月千秋
-#  版本：V 1.0
-#  最近更新：2014.04.05
 #------------------------------------------------------------------------------
 # ● 简介
 #  Smomo脚本的核心，提供了一些常用功能，有些脚本需要依靠此脚本以正常工作
@@ -11,6 +9,7 @@
 #  插入到其他Smomo脚本上方
 #==============================================================================
 # ● 更新
+#   V 1.1 2014.05.10 新方法：Smomo.traverse_dir
 #   V 1.0 2014.04.05 新建
 #==============================================================================
 # ● 声明
@@ -18,8 +17,8 @@
 #==============================================================================
 
 $smomo ||= {}
-if $smomo["Core"].nil? || $smomo["Core"] < 1.0
-$smomo["Core"] = 1.0
+if $smomo["Core"].nil? || $smomo["Core"] < 1.1
+$smomo["Core"] = 1.1
 
 $smomo["RGSS Version"] = 
   defined?(Audio.setup_midi) ? :VA : defined?(Graphics.wait) ? :VX : :XP
@@ -46,6 +45,8 @@ $smomo["RGSS Version"] =
 # ·web(url = "") 调用浏览器打开网页
 #
 # ·deep_clone(obj) 深度复制对象
+#
+# ·traverse_dir(file_path = "."){} 遍历目录
 #
 # ·
 #============================================================================
@@ -121,6 +122,20 @@ module Smomo
   def deep_clone(obj)
     Marshal.load Marshal.dump obj
   end
+  
+  # traverse_dir
+  def traverse_dir(file_path = ".")
+    return unless block_given?
+    if FileTest.directory? file_path
+      Dir.foreach(file_path) do |file|
+        traverse_dir("#{file_path}/#{file}"){|x| yield x} if
+        file != "." && file != ".."
+      end
+    else
+      yield file_path
+    end
+  end
+  
   
 end # Smomo
 
