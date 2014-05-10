@@ -53,6 +53,7 @@ module Smomo::MapVarBar
   # 渐变色2, 文本颜色, 进度颜色],
   #
   # 变量需要填写变量ID 附加文本形如 "击破数"
+  # 附加文本允许使用控制符 因此可以使用图标
   # 基础值：计算比例时，先把当前值加上基础值再进行计算
   # 初始最大值：因为游戏开始时变量为0 不能计算比例（除数不为零） 临时使用这个作为
   #  最大值 当最大值变量不为0时 此值无意义
@@ -91,7 +92,7 @@ module Smomo::MapVarBar
 #~     [1, 2, "击破数", 20, nil, '-', nil, nil, nil, 15],
 #~     [9, "生命", 0, 122, 20],
   #============================================================================
-    [1, 2, "击破数"],
+    [1, 2, "\\I[9]击破数"],
     [3, 4, "完成度"],
     [5, 6, "熟练等级"],
     [7, 8, "远征", nil, nil, '%'],
@@ -228,7 +229,9 @@ class Window_MapVarBar < Window_Base
   def draw_var_text(ct, pos, text, cr = nil, atext = nil)
     make_font_smaller
     change_color(text_color(ct))
-    draw_text(0, pos, contents.width, line_height, text)
+    text = convert_escape_characters(text)
+    oo = {:x => 0, :y => pos, :new_x => 0, :height => calc_line_height(text)}
+    process_character(text.slice!(0, 1), text, oo) until text.empty?
     if cr
       change_color(text_color(cr))
       draw_text(0, pos, contents.width, line_height, atext, 2)
