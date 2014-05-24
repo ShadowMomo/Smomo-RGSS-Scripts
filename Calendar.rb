@@ -1,8 +1,6 @@
 #==============================================================================
 # ■ 虚拟日历
 #  作者：影月千秋
-#  版本：V 2.5
-#  最近更新：2014.04.06
 #  适用：VA
 #  要求：Smomo脚本核心
 #------------------------------------------------------------------------------
@@ -11,7 +9,7 @@
 #  可以自定义计时规则和显示效果
 #  请为本脚本准备变量和开关，在下方进行设定
 #  本脚本需要Smomo脚本核心，请到此下载：http://tinyurl.com/l9kvg2p
-#  如果链接失效，请到bbs.66rpg.com，@余烬之中 或 @影月千秋
+#  如果链接失效，请到rm.66rpg.com，@余烬之中 或 @影月千秋
 #------------------------------------------------------------------------------
 # ● 使用方法：
 #  将此脚本插入到其他脚本以下，Main以上，在下面给出的设定区进行设定后即可
@@ -29,6 +27,7 @@
 #   例：【Smomo.calendar(:zone)】获取时段名
 #------------------------------------------------------------------------------
 # ● 版本：
+#   V 2.6 2014.05.24 修正了日期出现0的BUG
 #   V 2.5 2014.04.06 规范化脚本 消除冗余 重建逻辑结构 需要依赖Smomo脚本核心
 #   V 2.4 2014.01.31 修正读档时报错的BUG
 #   V 2.3 2014.01.29 可以自定义地图窗体的位置
@@ -76,9 +75,9 @@ module Smomo::Calendar
    # 请确保这个变量不与上面Var的变量（及其包括的范围内的变量）重合
 
   System = [
-    # ["单位", 满多少进一（最大值）],
-    ["分", 60],
-    ["时", 24],
+    # ["单位", 满多少进一（最大值）, 以零起始（真伪值）],
+    ["分", 60, true],
+    ["时", 24, true],
     ["日", 30],
     ["月", 12],
     ["年", 9999],
@@ -88,8 +87,10 @@ module Smomo::Calendar
     # 比如：636号时间线3145纪6887年6月4日 21:39:44:03
    # 这里有几项 上面的Var就会占用几个变量
    # 从上往下 单位由小到大 如：分-->时-->日-->月-->年
+   # 有的单位允许以0为值 比如 3:00 有的不行 比如 3月1日
+    # 默认不允许0值 如果需要允许 请将“以零起始”填为【true】
   
-  Start = [56, 19, 5, 4, 2014]
+  Start = [55, 19, 24, 5, 2014]
   # 设置游戏起始时间 与上面的单位从上到下依次对应
   
   PeriodName = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
@@ -278,7 +279,7 @@ module Smomo::Calendar
     define_method(:interpreter){|type| type == :all ? data : eval(%!@#{type}!)}
     
     def ini
-      System.each_with_index{|(u, m), i| $game_variables[Var + i] = Start[i]}
+      System.each_index{|i| $game_variables[Var + i] = Start[i]}
       @zone = ""
       @tone = Tone.new(0, 0, 0, 0)
       @need_change = false
@@ -301,12 +302,12 @@ module Smomo::Calendar
     end
     
     def ensure_time_legal
-      System.each_with_index do |(u, m), i|
-        while $game_variables[Var + i] >= m
+      System.each_with_index do |(u, m, o), i|
+        while $game_variables[Var + i] > m - (o ? 1 : 0)
           $game_variables[Var + i] -= m
           $game_variables[Var + i + 1] += 1
         end
-        while $game_variables[Var + i] < 0
+        while $game_variables[Var + i] < 1 - (o ? 1 : 0)
           $game_variables[Var + i] += m
           $game_variables[Var + i + 1] -= 1
         end
