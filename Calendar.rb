@@ -343,7 +343,7 @@ end
 # ■ Smomo.calendar(*a, &b)
 #==============================================================================
 def Smomo.calendar(*a, &b)
-  Calendar.interpreter(*a, &b)
+  Smomo::Calendar.interpreter(*a, &b)
 end
 #==============================================================================
 # ■ Scene_Map
