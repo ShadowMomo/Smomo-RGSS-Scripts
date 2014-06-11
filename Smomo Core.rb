@@ -1,66 +1,74 @@
 #==============================================================================
-# ■ Smomo脚本核心
+# ** Smomo脚本核心
 #  作者：影月千秋
 #------------------------------------------------------------------------------
-# ● 简介
+# * 简介
 #  Smomo脚本的核心，提供了一些常用功能，有些脚本需要依靠此脚本以正常工作
-#==============================================================================
-# ● 使用方法
+#------------------------------------------------------------------------------
+# * 使用方法
 #  插入到其他Smomo脚本上方
-#==============================================================================
-# ● 更新
+#------------------------------------------------------------------------------
+# * 更新
+#   V 1.2 2014.06.11 优化text_size的处理 为Smomo::Kit新增功能mail
 #   V 1.1 2014.05.10 新方法：Smomo.traverse_dir
 #   V 1.0 2014.04.05 新建
-#==============================================================================
-# ● 声明
+#------------------------------------------------------------------------------
+# * 声明
 #   本脚本来自【影月千秋】，使用、修改和转载请保留此信息
 #==============================================================================
 
 $smomo ||= {}
-if $smomo["Core"].nil? || $smomo["Core"] < 1.1
-$smomo["Core"] = 1.1
+if $smomo["Core"].nil? || $smomo["Core"] < 1.2
+$smomo["Core"] = 1.2
 
 $smomo["RGSS Version"] = 
   defined?(Audio.setup_midi) ? :VA : defined?(Graphics.wait) ? :VX : :XP
 
 #==============================================================================
-# ■ Smomo!module_function
+# ** Smomo!module_function
 #----------------------------------------------------------------------------
-# ·text_size(str, font = nil) 确定合适的文字大小(Rect矩形类)
+# *text_size(str, font = nil) 确定合适的文字大小(Rect矩形类)
 #
-# ·moveAE(aim, x = :x, y = :y) 动态移动效果，返回一个移动对象mover
+# *moveAE(aim, x = :x, y = :y) 动态移动效果，返回一个移动对象mover
 #     aim 被移动的对象 x y 横纵坐标的属性名
-#     ● 该方法需要Smomo::Kit
+#     * 该方法需要Smomo::Kit
 #   mover对象：
-#     ·moveto(tx, ty, duration = 1) 在duration次操作内移动至tx, ty处
+#     *moveto(tx, ty, duration = 1) 在duration次操作内移动至tx, ty处
 #         如果正在移动中 则保持原有移动状态 不前往新位置
 #         原则上该方法应该每帧调用一次
-#     ·lock(type = :switch) 锁定/解锁  可以使用参数 :on 和 :off
+#     *lock(type = :switch) 锁定/解锁  可以使用参数 :on 和 :off
 #         锁定状态下，会完成当前移动，但不会接受新的指令
-#     ·stop 停止移动
-#     ·apos 获取目标点坐标 返回一个包含两个元素的数组
-#     ·opos 获取起始点坐标
-#     ·arrived? 是否已经到达
+#     *stop 停止移动
+#     *apos 获取目标点坐标 返回一个包含两个元素的数组
+#     *opos 获取起始点坐标
+#     *arrived? 是否已经到达
 #
-# ·web(url = "") 调用浏览器打开网页
+# *web(url = "") 调用浏览器打开网页
 #
-# ·deep_clone(obj) 深度复制对象
+# *deep_clone(obj) 深度复制对象
 #
-# ·traverse_dir(file_path = "."){} 遍历目录
+# *traverse_dir(file_path = "."){} 遍历目录
 #
-# ·
 #============================================================================
 module Smomo
   module_function
   
   # text_size
   def text_size(str, font = nil)
-    tmp = Bitmap.new
-    tmp.font = font if font
-    rect = tmp.text_size(str)
-    tmp.dispose
-    rect.width += 2
-    rect
+    tmp = Window_Base.new(Graphics.width, 0, Graphics.width, 1)
+    tmp.reset_font_settings
+    tmp.contents.font = font if font
+    width = 0
+    pos = {x: 0, y: 0, height: tmp.calc_line_height(str)}
+    str.each_line do |s|
+      s.gsub!(/[\n]/){""}
+      tmp.process_character(s.slice!(0, 1), s, pos) until s.empty?
+      width = [pos[:x], width].max
+      pos[:x] = 0
+      pos[:y] += pos[:height]
+      pos[:height] = tmp.calc_line_height s
+    end
+    Rect.new 0, 0, width, pos[:y]
   end
   
   # moveAE
@@ -136,7 +144,6 @@ module Smomo
     end
   end
   
-  
 end # Smomo
 
 
@@ -144,6 +151,17 @@ end # Smomo
 # ■ Smomo::Kit
 #============================================================================
 module Smomo::Kit
+  module Temp
+    module_function
+    # receive
+    def receive code
+      @value = eval code
+    end
+    # value
+    def value
+      @value
+    end
+  end
   # 公用寄存表
   @@register = {
     moveAE: []
@@ -153,7 +171,10 @@ module Smomo::Kit
   def register
     @@register
   end
-  
+  # 邮寄
+  def mail code
+    Temp.receive code
+  end
 end # Smomo::Kit
 
 
