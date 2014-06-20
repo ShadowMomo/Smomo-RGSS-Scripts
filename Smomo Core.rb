@@ -1,4 +1,4 @@
-#==============================================================================
+﻿#==============================================================================
 # ** Smomo脚本核心
 #  作者：影月千秋
 #------------------------------------------------------------------------------
@@ -9,46 +9,52 @@
 #  插入到其他Smomo脚本上方
 #------------------------------------------------------------------------------
 # * 更新
+#   V 1.4 2014.06.20 加入括号匹配
+#   V 1.3 2014.06.14 mail并入register 加入两个api moveAE优化并更名transition
 #   V 1.2 2014.06.11 优化text_size的处理 为Smomo::Kit新增功能mail
 #   V 1.1 2014.05.10 新方法：Smomo.traverse_dir
 #   V 1.0 2014.04.05 新建
 #------------------------------------------------------------------------------
 # * 声明
-#   本脚本来自【影月千秋】，使用、修改和转载请保留此信息
+#   本脚本来自"影月千秋", 使用/修改/转载请保留此信息
 #==============================================================================
 
 $smomo ||= {}
-if $smomo["Core"].nil? || $smomo["Core"] < 1.2
-$smomo["Core"] = 1.2
+if $smomo["Core"].nil? || $smomo["Core"] < 1.4
+$smomo["Core"] = 1.4
 
-$smomo["RGSS Version"] = 
+$smomo["RGSS Version"] =
   defined?(Audio.setup_midi) ? :VA : defined?(Graphics.wait) ? :VX : :XP
 
 #==============================================================================
 # ** Smomo!module_function
 #----------------------------------------------------------------------------
-# *text_size(str, font = nil) 确定合适的文字大小(Rect矩形类)
-#
-# *moveAE(aim, x = :x, y = :y) 动态移动效果，返回一个移动对象mover
-#     aim 被移动的对象 x y 横纵坐标的属性名
-#     * 该方法需要Smomo::Kit
-#   mover对象：
-#     *moveto(tx, ty, duration = 1) 在duration次操作内移动至tx, ty处
-#         如果正在移动中 则保持原有移动状态 不前往新位置
-#         原则上该方法应该每帧调用一次
-#     *lock(type = :switch) 锁定/解锁  可以使用参数 :on 和 :off
-#         锁定状态下，会完成当前移动，但不会接受新的指令
-#     *stop 停止移动
-#     *apos 获取目标点坐标 返回一个包含两个元素的数组
-#     *opos 获取起始点坐标
-#     *arrived? 是否已经到达
-#
-# *web(url = "") 调用浏览器打开网页
-#
-# *deep_clone(obj) 深度复制对象
-#
-# *traverse_dir(file_path = "."){} 遍历目录
-#
+# * text_size(str, font = nil) 确定合适的文字大小(Rect矩形类)
+# 
+# * transition(object, attribute) 属性值的过渡渐变 返回一个渐变对象signal
+#     object: 被操作的对象   attribute: 进行变换属性名
+#   signal对象：
+#     * target(value, duration = 1) 在duration帧内变换为value
+#         如果正在变换中 则将该变换添加至原变换后 顺次执行
+#         指令添加成功 返回true 否则false
+#     * turn 改变变换方向 本质上是将指令队列反向执行
+#     * lock(state = :switch) 锁定/解锁  可以使用参数 :on 和 :off
+#         锁定状态下 会完成当前变换 但不再接受新的指令
+#     * clear 停止移动 并清空指令队列
+#     * kill 删除该signal对象
+#     * arrived? 判定是否到达终点 判定条件和变换方向有关
+#     * update 执行更新 不需要手动调用
+#     如果被操作的属性不能读写 对应的signal对象将自动报废 不响应任何方法
+#     返回值均为 nil
+# 
+# * web(url = "") 调用浏览器打开网页
+# 
+# * deep_clone(obj) 深度复制对象
+# 
+# * traverse_dir(file_path = "."){} 遍历目录
+# 
+# * mBrackets(str, brackets = {'(' => ')', '[' => ']', '{' => '}', '<' => '>'})
+#   对字符串进行括号匹配
 #============================================================================
 module Smomo
   module_function
@@ -71,59 +77,77 @@ module Smomo
     Rect.new 0, 0, width, pos[:y]
   end
   
-  # moveAE
-  def moveAE(aim, x = :x, y = :y)
-    reg = Smomo::Kit.register[:moveAE]
-    id = aim.object_id
-    return reg[id] if reg[id]
-    reg[id] = Object.new
-    # class << reg[id]
-    class << reg[id]
-      attr_accessor :moving, :aim_id, :duration, :locked
-      attr_accessor :ox, :oy, :ax, :ay, :x, :y, :rx, :ry
-      # moveto
-      def moveto(tx, ty, duration)
-        unless @moving || @locked
-          a = ObjectSpace._id2ref(@aim_id)
-          @ox, @oy = a.send(@x), a.send(@y)
-          @ax, @ay = *[tx, ty].collect(&:to_i)
-          @rx, @ry = *[@ox, @oy].collect(&:to_f)
-          @duration = duration
-          @moving = true
-        end
-        _moveto
+  # transition
+  def transition(object, attribute)
+    ::Smomo::Kit.register[:transition].push signal = Object.new
+    # Class Signal
+    class << signal
+      # target
+      def target(value, duration = 1)
+        return false if @lock
+        @targets[-1][0] = (@current = @object.send(@attribute).to_f).to_i if
+        @targets.size == 1
+        @targets[-1][1] = @targets[-1][2] =
+        duration.round == 0 ? 1 : duration.round
+        @targets.push [value.round]
+        return true
+      end
+      # turn
+      def turn
+        @position -= 1 if @direction == 1 && @position == @targets.size - 1
+        @position += 1 if @direction == -1 && @position == -1
+        @targets.each{|e| e[2] = e[1] - e[2] unless e[1].nil?}
+        @direction = -@direction
       end
       # lock
-      def lock(type = :switch)
-        @locked = type == :on ? true : type == :off ? false : !@locked
+      def lock(state = :switch)
+        @lock = state == :on ? true : state == :off ? false : !@lock
       end
-      # stop
-      define_method(:stop){@moving = false}
-      # apos
-      define_method(:apos){[@ax, @ay]}
-      # opos
-      define_method(:opos){[@ox, @oy]}
+      # update
+      def update
+        return if @targets.size == 1
+        return if arrived?
+        @object.send "#{@attribute}=", @current +=
+        (@targets[@position + (@direction == 1 ? 1 : 0)][0] - @current).to_f /
+        @targets[@position][2]
+        @targets[@position][2] -= 1
+        if @targets[@position][2] == 0
+          @position += @direction
+          @object.send "#{@attribute}=", @current =
+          @targets[@position + (@direction == 1 ? 0 : 1)][0].to_f
+        end
+      rescue RGSSError
+        kill
+      end
+      # clear
+      def clear
+        @direction = 1
+        @targets = [[@position = @current = 0]]
+      end
       # arrived?
-      define_method(:arrived?){a.send(@x) == @ax && a.send(@y) == @ay}
-      private
-      # _moveto
-      def _moveto
-        return unless @moving
-        a = ObjectSpace._id2ref(@aim_id)
-        @rx += (@ax - @ox).to_f / @duration
-        @ry += (@ay - @oy).to_f / @duration
-        a.instance_eval %!self.#{@x}, self.#{@y} = #{@rx}, #{@ry}!
-        stop if (@rx - @ax).to_i == 0 && (@ry - @ay).to_i == 0
+      def arrived?
+        @position == (@direction == 1 ? @targets.size - 1 : -1)
       end
-    end # class << reg[id]
-    reg[id].moving, reg[id].locked, reg[id].x, reg[id].y, reg[id].aim_id =
-             false,          false,         x,         y,             id
-    reg[id]
-  end # moveAE
+      # kill
+      def kill
+        dead = Object.new
+        class << dead; def method_missing *args; end; end
+        ::Smomo::Kit.register[:transition][@uid] = dead
+      end
+      # init
+      def init object, attribute, uid
+        clear
+        @lock, @object, @attribute, @uid = false, object, attribute, uid
+      end
+    end # Class Signal
+    signal.init object, attribute, ::Smomo::Kit.register[:transition].size - 1
+    class << signal; undef init; end
+    signal
+  end
   
   # web
   def web(url = "")
-    eval %Q!`start #{url}`!
+    `start #{url}`
   end
   
   # deep_clone
@@ -144,44 +168,53 @@ module Smomo
     end
   end
   
+  # mBrackets
+  def mBrackets str, brackets = {'(' => ')', '[' => ']', '{' => '}', '<' => '>'}
+    matched = []
+    valid = [0]
+    result = [""]
+    s = str.clone
+    b = ""
+    while (b = s.slice!(0, 1)) != ""
+      valid.each{|v| result[v].concat(b)}
+      if brackets.keys.include?(b)
+        matched.push(b)
+        valid.push(result.size)
+        result.push("")
+      elsif brackets.values.include?(b)
+        if brackets[matched[-1]] == b
+          result[valid[-1]].chop!
+          valid.pop
+          matched.pop
+        else
+          raise ArgumentError, "False Matching!"
+        end
+      end
+    end
+    result
+  end
 end # Smomo
 
-
 #============================================================================
-# ■ Smomo::Kit
+# ** Smomo::Kit
 #============================================================================
 module Smomo::Kit
-  module Temp
-    module_function
-    # receive
-    def receive code
-      @value = eval code
-    end
-    # value
-    def value
-      @value
-    end
-  end
   # 公用寄存表
   @@register = {
-    moveAE: []
+    transition: [],
+    temp: nil,
   } # @@register
   module_function
   # 获取寄存表
   def register
     @@register
   end
-  # 邮寄
-  def mail code
-    Temp.receive code
-  end
 end # Smomo::Kit
 
-
 #============================================================================
-# ■ Smomo::Mixin
+# ** Smomo::Mixin
 #----------------------------------------------------------------------------
-# ·_def_ sym, type = :a, &append 快速重定义方法 添加新增的内容
+# * _def_ sym, type = :a, &append 快速重定义方法 添加新增的内容
 #    方法获得的参数会传递给新增的块
 #    三个参数依次为：方法名 添加方式 添加的块
 #    方法名为一Symbol
@@ -197,8 +230,13 @@ end # Smomo::Kit
 #      缺省值为 :a
 #      如果是其他的值 则不会对原方法进行更改 _def_什么也不做
 #    添加的块
-#      为了提高兼容性，建议使用|*args, &block|来定义形参，因为调用的时候会检查参数
+#      为了提高兼容性 建议使用|*args, &block|来定义形参 因为调用的时候会检查参数
 #      对于:c和:v，建议使用|old, *args, &block|，这样可以方便地获得原方法
+# 
+# * _api(code) 快速新建Win32API code的格式为"库|方法|参数类型|返回值类型"
+# 
+# * __api(code, *args) 快速新建Win32API并用参数call code同上
+# 
 #============================================================================
 module Smomo::Mixin
   # _def_
@@ -251,9 +289,43 @@ module Smomo::Mixin
     return true
   end
   
+  # _api
+  def _api code
+    Win32API.new *code.split("|")
+  end
+  
+  # __api
+  def __api code, *args
+    _api(code).call *args
+  end
+  
   # 混入Module模块类以便调用
   Module.send(:include, self)
 end # Smomo::Mixin
+
+#==============================================================================
+# ** Graphics
+#==============================================================================
+class << Graphics
+  _def_ :update do Smomo.update end
+end
+
+#==============================================================================
+# ** Smomo!update
+#==============================================================================
+module Smomo
+  module_function
+  
+  # update
+  def update
+    update_transition
+  end
+  
+  # update_transition
+  def update_transition
+    ::Smomo::Kit.register[:transition].each &:update
+  end
+end # Smomo
 
 else
   msgbox "你已经安装过了更高版本的Smomo脚本核心，不需要重复安装 : )"
