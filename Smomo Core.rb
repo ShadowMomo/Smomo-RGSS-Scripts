@@ -171,18 +171,16 @@ module Smomo
   # mBrackets
   def mBrackets str, brackets = {'(' => ')', '[' => ']', '{' => '}', '<' => '>'}
     matched = []
-    valid = [0]
     result = [""]
-    s = str.clone
-    b = ""
-    while (b = s.slice!(0, 1)) != ""
-      valid.each{|v| result[v].concat(b)}
-      if brackets.keys.include?(b)
-        matched.push(b)
+    valid = [0]
+    str.clone.each_char do |c|
+      valid.each{|v| result[v].concat(c)}
+      if brackets.keys.include?(c)
+        matched.push(c)
         valid.push(result.size)
         result.push("")
-      elsif brackets.values.include?(b)
-        if brackets[matched[-1]] == b
+      elsif brackets.values.include?(c)
+        if brackets[matched[-1]] == c
           result[valid[-1]].chop!
           valid.pop
           matched.pop
