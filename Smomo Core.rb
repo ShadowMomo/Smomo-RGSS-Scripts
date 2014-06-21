@@ -241,8 +241,7 @@ module Smomo::Mixin
   def _def_ sym, type = :a, &append
     access = public_method_defined?(sym) ? :public :
              protected_method_defined?(sym) ? :protected :
-             private_method_defined?(sym) ? :private : nil
-    # 不存在方法时，下一步自然会报错。无需利用返回值
+             private_method_defined?(sym) ? :private : :impossible
     origin_method = instance_method(sym)
     define_method sym, &append
     append_method = instance_method(sym)
@@ -282,9 +281,6 @@ module Smomo::Mixin
     else; define_method sym, origin_method
     end
     send access, sym
-    # 返回sym吧，Ruby2.1以后都这么干了（本来返回nil）。
-    # 总比返回 true 来的有意义
-    # 你可以 private _def_(...) {...}
     sym
   end
   
