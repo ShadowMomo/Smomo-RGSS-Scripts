@@ -1,8 +1,6 @@
 #==============================================================================#
 # * RGSS3 Script - Skip Title                                                  #
 #  * Author - Shadwo Momo                                                      #
-#  * Version - 1.0                                                             #
-#  * Last Update - 2013.12.15                                                  #
 #------------------------------------------------------------------------------#
 # * Introduce                                                                  #
 #  Skip the Scene Title, start game at once.                                   #
@@ -11,6 +9,7 @@
 #  Insert the script below other materials but above Main.                     #
 #------------------------------------------------------------------------------#
 # * Update                                                                     #
+#  V 1.1 2014.06.21 Set transition speed to 0                                  #
 #  V 1.0 2013.12.15 Build                                                      #
 #------------------------------------------------------------------------------#
 # * License                                                                    #
@@ -28,6 +27,9 @@ class Scene_Title
   end
   def terminate
     super
+  end
+  def transition_speed
+    0
   end
 end
 #==============================================================================#
