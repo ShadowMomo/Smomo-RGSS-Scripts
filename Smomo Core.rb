@@ -173,7 +173,7 @@ module Smomo
     matched = []
     result = [""]
     valid = [0]
-    str.clone.each_char do |c|
+    str.each_char do |c|
       valid.each{|v| result[v].concat(c)}
       if brackets.keys.include?(c)
         matched.push(c)
