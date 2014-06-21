@@ -9,19 +9,20 @@
 #  插入到其他Smomo脚本上方
 #------------------------------------------------------------------------------
 # * 更新
-#   V 1.4 2014.06.20 加入括号匹配
-#   V 1.3 2014.06.14 mail并入register 加入两个api moveAE优化并更名transition
-#   V 1.2 2014.06.11 优化text_size的处理 为Smomo::Kit新增功能mail
-#   V 1.1 2014.05.10 新方法：Smomo.traverse_dir
-#   V 1.0 2014.04.05 新建
+#   V 1.41 2014.06.21 加入shell_execute系列
+#   V 1.4  2014.06.20 加入括号匹配
+#   V 1.3  2014.06.14 mail并入register 加入两个api moveAE优化并更名transition
+#   V 1.2  2014.06.11 优化text_size的处理 为Smomo::Kit新增功能mail
+#   V 1.1  2014.05.10 新方法：Smomo.traverse_dir
+#   V 1.0  2014.04.05 新建
 #------------------------------------------------------------------------------
 # * 声明
 #   本脚本来自"影月千秋", 使用/修改/转载请保留此信息
 #==============================================================================
 
 $smomo ||= {}
-if $smomo["Core"].nil? || $smomo["Core"] < 1.4
-$smomo["Core"] = 1.4
+if $smomo["Core"].nil? || $smomo["Core"] < 1.41
+$smomo["Core"] = 1.41
 
 $smomo["RGSS Version"] =
   defined?(Audio.setup_midi) ? :VA : defined?(Graphics.wait) ? :VX : :XP
@@ -46,6 +47,29 @@ $smomo["RGSS Version"] =
 #     * update 执行更新 不需要手动调用
 #     如果被操作的属性不能读写 对应的signal对象将自动报废 不响应任何方法
 #     返回值均为 nil
+# 
+# * shell_execute 使用API调用外部程序打开文件或超链接
+#   参数说明
+#     * hwnd 整型 为用于展现用户接口或者错误信息的父窗口句柄 可以为空
+#     * lpOperation 字符串 操作模式
+#       可以使用的值 均可以顾名思义
+#       "edit" "explore" "find" "open" "print"
+#       可以为空 意味着默认方式 如果未定义默认方式 使用"open"
+#     * lpFile 字符串 被操作的文件或超链接
+#     * lpParameters 字符串 传递给所调用程序的参数
+#     * lpDirectory 字符串 行为的默认工作目录
+#     * nShowCmd 整型 标识应用程序应该如何被打开
+#       可以使用的值及意义
+#       0 隐藏 1 正常大小 2 激活并最小化 3 最大化 4 不激活 5 激活 6 最小化
+#       7 最小化但仍保持激活 8 保持当前状态 9 激活并恢复正常大小 10 根据环境变量
+#       请注意 这些值单纯的发送给被调用者 具体如何处理由被调用者决定
+#   返回值
+#     大于32时，操作成功，否则失败
+# 
+# * quick_shell 快速调用shell_execute 改变了参数顺序 设置了默认值
+#   新的参数顺序及默认值
+#     lpFile 无默认值
+#     lpOperation "open"  nShowCmd 1  hwnd 0  lpParameters ""  lpDirectory ""
 # 
 # * web(url = "") 调用浏览器打开网页
 # 
@@ -144,17 +168,27 @@ module Smomo
     class << signal; undef init; end
     signal
   end
+    
+  # shell_execute
+  def shell_execute(*args)
+    __api "Shell32|ShellExecute|ippppi|i".call *args
+  end
+  
+  # quick_shell
+  def quick_shell(f, o = "open", n = 1, h = 0, p = "", d = "")
+    shell_execute h, o, f, p, d, n
+  end
   
   # web
   def web(url = "")
-    `start #{url}`
+    quick_shell(url)
   end
   
   # deep_clone
   def deep_clone(obj)
     Marshal.load Marshal.dump obj
   end
-  
+    
   # traverse_dir
   def traverse_dir(file_path = ".")
     return unless block_given?
@@ -281,7 +315,7 @@ module Smomo::Mixin
     else; define_method sym, origin_method
     end
     send access, sym
-    sym
+    return sym
   end
   
   # _api
