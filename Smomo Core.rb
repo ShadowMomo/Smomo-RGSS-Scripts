@@ -209,11 +209,11 @@ module Smomo
     valid = [0]
     str.each_char do |c|
       valid.each{|v| result[v].concat(c)}
-      if brackets.keys.include?(c)
+      if brackets.key?(c)
         matched.push(c)
         valid.push(result.size)
         result.push("")
-      elsif brackets.values.include?(c)
+      elsif brackets.value?(c)
         if brackets[matched[-1]] == c
           result[valid[-1]].chop!
           valid.pop
