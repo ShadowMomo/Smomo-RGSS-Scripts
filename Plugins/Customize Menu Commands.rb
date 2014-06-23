@@ -20,17 +20,17 @@
 #==============================================================================
 
 $smomo ||= {}
-if $smomo["CustomizeMenuCommand"].nil?
-$smomo["CustomizeMenuCommand"] = true
+if $smomo["CustomizeMenuCommands"].nil?
+$smomo["CustomizeMenuCommands"] = true
 
 #==============================================================================
 # ■ Smomo
 #==============================================================================
 module Smomo
   #============================================================================
-  # ■ Smomo::CustomizeMenuCommand
+  # ■ Smomo::CustomizeMenuCommands
   #============================================================================
-  module CustomizeMenuCommand
+  module CustomizeMenuCommands
     Error_box = false
     # 出错时，报错是否使用提示框，如果不使用，则在控制台输出
     Refresh = true
@@ -100,7 +100,7 @@ msgbox "多个语句间用英文半角分号;分开就可以正常运行，或�
     Command.pop
     Command.uniq!
     Command.sort!
-    Error_msg = "脚本 MoCustomizeMenuCommand 参数填写非法!\n"
+    Error_msg = "脚本 MoCustomizeMenuCommands 参数填写非法!\n"
     Error_met = Error_box ? method(:msgbox) : method(:print)
     key_error = false
     Command.each_with_index do |cmd,i|
@@ -130,14 +130,14 @@ class Window_MenuCommand
   defined?(:mo_mk_cmd_list_cus)
   def make_command_list
     mo_mk_cmd_list_cus
-    mo_add_cus_commands rescue Smomo::CustomizeMenuCommand::Error_met.
-    call "脚本 MoCustomizeMenuCommand 出错!\n未知错误\n"
+    mo_add_cus_commands rescue Smomo::CustomizeMenuCommands::Error_met.
+    call "脚本 MoCustomizeMenuCommands 出错!\n未知错误\n"
   end
   #--------------------------------------------------------------------------
   # ● 添加自定义指令
   #--------------------------------------------------------------------------
   def mo_add_cus_commands
-    mo_addon_cmds = Smomo::CustomizeMenuCommand::Command.clone
+    mo_addon_cmds = Smomo::CustomizeMenuCommands::Command.clone
     return if mo_addon_cmds.empty?
     # 删除无效指令
     mo_addon_cmds.reject!{|cmd|!cmd[3].nil? &&
@@ -174,7 +174,7 @@ class Scene_Menu
   defined?(:mo_cre_cmd_win_cus)
   def create_command_window
     mo_cre_cmd_win_cus
-    Smomo::CustomizeMenuCommand::Command.each do |cmd|
+    Smomo::CustomizeMenuCommands::Command.each do |cmd|
       eval("@command_window.set_handler(:mo_cus_add_mcmds#{cmd[0]},
       method(:mo_cus_add_cmd_call))")
     end
@@ -184,21 +184,21 @@ class Scene_Menu
   #--------------------------------------------------------------------------
   def mo_cus_add_cmd_call
     eval(@command_window.current_ext) rescue
-    Smomo::CustomizeMenuCommand::Error_met.
-    call "脚本 MoCustomizeMenuCommand 参数填写非法!\n错误的过程\n"
+    Smomo::CustomizeMenuCommands::Error_met.
+    call "脚本 MoCustomizeMenuCommands 参数填写非法!\n错误的过程\n"
     if SceneManager.scene_is?(Scene_Menu)
       instance_variables.each do |varname|
         ivar = instance_variable_get(varname)
         ivar.refresh if ivar.is_a?(Window) rescue ivar.update
-      end if Smomo::CustomizeMenuCommand::Refresh
+      end if Smomo::CustomizeMenuCommands::Refresh
       @command_window.activate
     end
   end
 end
 
-else # if $smomo["CustomizeMenuCommand"].nil?
-  msgbox "请不要重复加载此脚本 ：）\n（CustomizeMenuCommand）"
-end # if $smomo["CustomizeMenuCommand"].nil?
+else # if $smomo["CustomizeMenuCommands"].nil?
+  msgbox "请不要重复加载此脚本 ：）\n（CustomizeMenuCommands）"
+end # if $smomo["CustomizeMenuCommands"].nil?
 #==============================================================================#
 #=====                        =================================================#
            "脚 本 尾"
