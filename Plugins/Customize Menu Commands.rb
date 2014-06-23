@@ -182,7 +182,7 @@ class Scene_Menu
   # ● 执行自定义指令
   #--------------------------------------------------------------------------
   def mo_cus_add_cmd_call
-    eval(@command_window.current_ext) rescue
+    TOPLEVEL_BINDING.eval(@command_window.current_ext) rescue
     Smomo::CustomizeMenuCommands::Error_met.
     call "脚本 MoCustomizeMenuCommands 参数填写非法!\n错误的过程\n"
     if SceneManager.scene_is?(Scene_Menu)
