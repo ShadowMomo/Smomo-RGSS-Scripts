@@ -34,7 +34,8 @@ module Smomo
     Error_box = false
     # 出错时，报错是否使用提示框，如果不使用，则在控制台输出
     Refresh = true
-    # 每次执行命令后 是否刷新菜单各窗口 如果你的命令改变了某些值(比如金钱) 最好刷新
+    # 每次执行命令后 是否刷新菜单各窗口 如果你的命令改变了某些值(比如金钱)
+    # 最好刷新
     # 此功能一般不会影响效率 但如果感觉卡顿 可以设为false以禁用
     Command = [ # do not touch
     #---------------------------------------------------------------------->|
@@ -87,17 +88,13 @@ module Smomo
       [5,"※特殊情况",%Q!msgbox "注意！如果有两个按钮使用了同一个位置ID，
 其中一个不会显示"!],
       [111,"※获得金钱",%Q!$game_party.gain_gold(10000);msgbox "拿钱！"
-msgbox "多个语句间用英文半角分号;分开就可以正常运行，或者干脆分两行写\n像这样"!],
-
-
+msgbox "多个语句间用英文半角分号;分开就可以正常运行,或者干脆分两行写\n像这样"!],
+    ]
 #=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+#
 #-------------                     --------------------------------------------#
                "请勿跨过这块区域"
 #-------------                     --------------------------------------------#
 #+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=#
-      ["Close the array"]
-      ] # close the array
-    Command.pop
     Command.uniq!
     Command.sort!
     Error_msg = "脚本 MoCustomizeMenuCommands 参数填写非法!\n"
@@ -107,11 +104,13 @@ msgbox "多个语句间用英文半角分号;分开就可以正常运行，或�
       if cmd.size > 1 && cmd.size < 5 && cmd[0].is_a?(Integer) &&
       cmd[1].is_a?(String)
         unless cmd[2].is_a?(String)
-          Error_met.call Error_msg + "第#{i}个参数,内容:\n#{cmd}\n未填写过程\n"
-          cmd[2] = %Q!Error_met.call "未填写过程\n"}!
+          Error_met.call "#{Error_msg}第#{i}个参数,内容:\n#{cmd}\n未填写过程\n"
+          cmd[2] =
+          %Q!method(:#{Error_box ? :msgbox : :print}).call "未填写过程\\n"!
         end # unless
       else
-        Error_met.call Error_msg + "第#{i}个参数,内容:\n#{cmd}\n数量或类型错误\n"
+        Error_met.call "#{Error_msg}第#{i}个参数,内容:\n#{cmd}\n"
+        + "数量或类型错误\n"
         key_error = true
       end # if
     end # Command
@@ -127,7 +126,7 @@ class Window_MenuCommand
   # ● 生成指令列表
   #--------------------------------------------------------------------------
   alias :mo_mk_cmd_list_cus :make_command_list unless
-  defined?(:mo_mk_cmd_list_cus)
+  method_defined?(:mo_mk_cmd_list_cus)
   def make_command_list
     mo_mk_cmd_list_cus
     mo_add_cus_commands rescue Smomo::CustomizeMenuCommands::Error_met.
@@ -171,7 +170,7 @@ class Scene_Menu
   # ● 生成指令窗口
   #--------------------------------------------------------------------------
   alias :mo_cre_cmd_win_cus :create_command_window unless
-  defined?(:mo_cre_cmd_win_cus)
+  method_defined?(:mo_cre_cmd_win_cus)
   def create_command_window
     mo_cre_cmd_win_cus
     Smomo::CustomizeMenuCommands::Command.each do |cmd|
