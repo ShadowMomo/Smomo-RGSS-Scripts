@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>W</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<style type="text/css">
+/* GitHub stylesheet for MarkdownPad (http://markdownpad.com) */
+/* Author: Nicolas Hery - http://nicolashery.com */
+/* Version: b13fe65ca28d2e568c6ed5d7f06581183df8f2ff */
+/* Source: https://github.com/nicolahery/markdownpad-github */
+
+/* RESET
+=============================================================================*/
+
+html, body, div, span, applet, object, iframe, h1, h2, h3, h4, h5, h6, p, blockquote, pre, a, abbr, acronym, address, big, cite, code, del, dfn, em, img, ins, kbd, q, s, samp, small, strike, strong, sub, sup, tt, var, b, u, i, center, dl, dt, dd, ol, ul, li, fieldset, form, label, legend, table, caption, tbody, tfoot, thead, tr, th, td, article, aside, canvas, details, embed, figure, figcaption, footer, header, hgroup, menu, nav, output, ruby, section, summary, time, mark, audio, video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* BODY
+=============================================================================*/
+
+body {
+  font-family: Helvetica, arial, freesans, clean, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #333;
+  background-color: #fff;
+  padding: 20px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+body>*:first-child {
+  margin-top: 0 !important;
+}
+
+body>*:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* BLOCKS
+=============================================================================*/
+
+p, blockquote, ul, ol, dl, table, pre {
+  margin: 15px 0;
+}
+
+/* HEADERS
+=============================================================================*/
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 20px 0 10px;
+  padding: 0;
+  font-weight: bold;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 tt, h1 code, h2 tt, h2 code, h3 tt, h3 code, h4 tt, h4 code, h5 tt, h5 code, h6 tt, h6 code {
+  font-size: inherit;
+}
+
+h1 {
+  font-size: 28px;
+  color: #000;
+}
+
+h2 {
+  font-size: 24px;
+  border-bottom: 1px solid #ccc;
+  color: #000;
+}
+
+h3 {
+  font-size: 18px;
+}
+
+h4 {
+  font-size: 16px;
+}
+
+h5 {
+  font-size: 14px;
+}
+
+h6 {
+  color: #777;
+  font-size: 14px;
+}
+
+body>h2:first-child, body>h1:first-child, body>h1:first-child+h2, body>h3:first-child, body>h4:first-child, body>h5:first-child, body>h6:first-child {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+a:first-child h1, a:first-child h2, a:first-child h3, a:first-child h4, a:first-child h5, a:first-child h6 {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+h1+p, h2+p, h3+p, h4+p, h5+p, h6+p {
+  margin-top: 10px;
+}
+
+/* LINKS
+=============================================================================*/
+
+a {
+  color: #4183C4;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* LISTS
+=============================================================================*/
+
+ul, ol {
+  padding-left: 30px;
+}
+
+ul li > :first-child, 
+ol li > :first-child, 
+ul li ul:first-of-type, 
+ol li ol:first-of-type, 
+ul li ol:first-of-type, 
+ol li ul:first-of-type {
+  margin-top: 0px;
+}
+
+ul ul, ul ol, ol ol, ol ul {
+  margin-bottom: 0;
+}
+
+dl {
+  padding: 0;
+}
+
+dl dt {
+  font-size: 14px;
+  font-weight: bold;
+  font-style: italic;
+  padding: 0;
+  margin: 15px 0 5px;
+}
+
+dl dt:first-child {
+  padding: 0;
+}
+
+dl dt>:first-child {
+  margin-top: 0px;
+}
+
+dl dt>:last-child {
+  margin-bottom: 0px;
+}
+
+dl dd {
+  margin: 0 0 15px;
+  padding: 0 15px;
+}
+
+dl dd>:first-child {
+  margin-top: 0px;
+}
+
+dl dd>:last-child {
+  margin-bottom: 0px;
+}
+
+/* CODE
+=============================================================================*/
+
+pre, code, tt {
+  font-size: 12px;
+  font-family: Consolas, "Liberation Mono", Courier, monospace;
+}
+
+code, tt {
+  margin: 0 0px;
+  padding: 0px 0px;
+  white-space: nowrap;
+  border: 1px solid #eaeaea;
+  background-color: #f8f8f8;
+  border-radius: 3px;
+}
+
+pre>code {
+  margin: 0;
+  padding: 0;
+  white-space: pre;
+  border: none;
+  background: transparent;
+}
+
+pre {
+  background-color: #f8f8f8;
+  border: 1px solid #ccc;
+  font-size: 13px;
+  line-height: 19px;
+  overflow: auto;
+  padding: 6px 10px;
+  border-radius: 3px;
+}
+
+pre code, pre tt {
+  background-color: transparent;
+  border: none;
+}
+
+kbd {
+    -moz-border-bottom-colors: none;
+    -moz-border-left-colors: none;
+    -moz-border-right-colors: none;
+    -moz-border-top-colors: none;
+    background-color: #DDDDDD;
+    background-image: linear-gradient(#F1F1F1, #DDDDDD);
+    background-repeat: repeat-x;
+    border-color: #DDDDDD #CCCCCC #CCCCCC #DDDDDD;
+    border-image: none;
+    border-radius: 2px 2px 2px 2px;
+    border-style: solid;
+    border-width: 1px;
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    line-height: 10px;
+    padding: 1px 4px;
+}
+
+/* QUOTES
+=============================================================================*/
+
+blockquote {
+  border-left: 4px solid #DDD;
+  padding: 0 15px;
+  color: #777;
+}
+
+blockquote>:first-child {
+  margin-top: 0px;
+}
+
+blockquote>:last-child {
+  margin-bottom: 0px;
+}
+
+/* HORIZONTAL RULES
+=============================================================================*/
+
+hr {
+  clear: both;
+  margin: 15px 0;
+  height: 0px;
+  overflow: hidden;
+  border: none;
+  background: transparent;
+  border-bottom: 4px solid #ddd;
+  padding: 0;
+}
+
+/* TABLES
+=============================================================================*/
+
+table th {
+  font-weight: bold;
+}
+
+table th, table td {
+  border: 1px solid #ccc;
+  padding: 6px 13px;
+}
+
+table tr {
+  border-top: 1px solid #ccc;
+  background-color: #fff;
+}
+
+table tr:nth-child(2n) {
+  background-color: #f8f8f8;
+}
+
+/* IMAGES
+=============================================================================*/
+
+img {
+  max-width: 100%
+}
+</style>
+</head>
+<body>
+<h1>预备部分</h1>
+<ul>
+<li>我自认为已经掌握了《RGSS 3 入门教程大家写》的大部分内容，可不可以测试一下我的掌握程度？我应该回去巩固基础还是在这里继续学习？</li>
+</ul>
+<blockquote>
+<p><del>学无止境。</del>这个直接找人出一套测试题吧~</p>
+</blockquote>
+<ul>
+<li>当我见到看不懂的代码时，我应该依次到哪里寻求帮助？</li>
+</ul>
+<blockquote>
+<p>当你读其他的脚本，遇到了不懂的地方，首先要确保<strong>你大概了解了这个脚本的逻辑结构，可能你看不懂的原因是因为详细的内容在脚本的后面</strong>。</p>
+<p>如果你只是对某句脚本的语法不大清楚，你应该自己猜想、尝试仿写一下，看看结果和你的预期有什么不同。</p>
+<p>有irb的开irb，没有irb开RM新工程也凑合，善用<code>p</code>、<code>msgbox</code>之类的方法，再不明白就勇敢的发帖提问，VA提问区或者技术讨论区（如果还在的话）都可以。</p>
+<p>如果你对脚本中出现的某个方法不熟悉，你应该首先确定方法的位置：是在RGSS3中定义的，还是在ruby基本库中定义的？（有时候甚至是作者自己定义的）然后查找F1帮助手册（VA的帮助手册只汉化了脚本部分，不过基础部分与VX是共通的，而且对我们没有影响，可以在<a href="http://pan.baidu.com/s/1sjDF5U1">这里</a>下载）。当然，也可以查阅ruby参考手册（汉化版<a href="http://www.kuqin.com/rubycndocument/man/">见此</a>，ruby版本1.8.1，官方英文版<a href="http://ruby-doc.org/core-1.9.2/">见此</a>，ruby版本1.9.2，RGSS3采用的是r1.9.2，但是很多地方与1.8.1都是共通的）。</p>
+<p>在库中找到你要的方法后，应该实际应用几次以加深印象。</p>
+</blockquote>
+<ul>
+<li>要提高我的脚本水平和对代码的理解，我应该多读脚本还是多写脚本？为什么？</li>
+</ul>
+<blockquote>
+<p>多写脚本。实践出真知，读的知识很容易忘，这就像做数学题和看例题的区别。</p>
+<p>写一些简单的脚本，轻轻松松，又加深印象又有成就感，很容易激励人继续往下学习。一开始就玩大工程很容易受挫。</p>
+<p>有时候看看那些角虫们写的大工程，一些算法和思路还是很有指导意义的。</p>
+</blockquote>
+<ul>
+<li>别人写的脚本好多行前面都有空格，都有什么用？我每行前面应该打多少空格？</li>
+</ul>
+<blockquote>
+<p>当我们写一篇作文的时候，在每个段落的开头都要空两格，也就是<strong>缩进</strong>。</p>
+<p>在脚本中，缩进用于提供代码的视觉组织，<strong>空行</strong>也有类似的功能。</p>
+<p>应该为不同逻辑层次的代码提供不同长度的缩进，用空行把同一层次中、不同语义的代码区分开。</p>
+<p>（实际上，这两点是一致的）</p>
+<p>至于应该打多少空格…………</p>
+<p>根据逻辑层次的深浅，决定缩进的长度，最外层不缩进，每进入一层，将缩进增加一个恒定的值</p>
+<p>这个恒定的值，我们推荐：<strong>两个空格</strong></p>
+<p>为什么是俩空格呢？</p>
+<p>当你在网络上搜寻ruby的推荐规范，他们都会告诉你，使用<em>软tab</em>，不要用<em>硬tab</em>（了解一下就够了），硬tab指的是你用键盘<code>Q</code>键左边那家伙打出来的缩进，软tab指的是用<code>空格</code>打出来的缩进，一般是两空格，少了效果不明显，多了打得费劲。</p>
+<p>而且RGSS原装脚本都是俩空格…………当年我什么都不懂的时候，就是这样学会了缩进的。</p>
+<p>顺便一提，在RM自带的脚本编辑器中，就算你用想硬tab，它会自动转换为两个空格的软tab缩进，所以Tab毫无压力</p>
+</blockquote>
+<ul>
+<li>我该在什么时候使用注释？应该注释什么内容？</li>
+</ul>
+<blockquote>
+<h4>什么时候用注释</h4>
+<p>注释的目的之一是<strong>备忘</strong>：设想，你写了一个漂亮的任务系统发布在技术区，@怪蜀黍 给了你500糖。</p>
+<p>一个月之后你收到一个来自@taroxd 的新提醒说发现了一个BUG，于是你打开你的工程开始修改……</p>
+<p>………………</p>
+<p>…………………………</p>
+<p>……………………………………</p>
+<p>你发现你已经看不懂你自己的代码了，你忘了一个叫做<code>fuck_i_hate_it</code>的方法是干什么用的，你不记得为什么类<code>Daddy</code>会出现在这里，你想不起来为什么这里要用<code>class_eval</code>………………</p>
+<p>这是一种目的，另外一种目的是<strong>说明</strong>，当你把你的脚本共享出来，就算你在发布帖写了详尽的说明，但是不要忘了，有各种意外情况比如<strong>从来不看发布帖使用说明的人<strong>和</strong>转载</strong></p>
+<h4>在哪里注释 注释什么内容</h4>
+<p>原装脚本的注释方法是推荐的</p>
+<p>在一个类的开头，这样注释，简短的说明类的功能</p>
+<pre>#=======================
+# ** Window_Greet
+#-----------------------
+#  用于展示问候语的窗口
+#=======================</pre>
+<p>在一个方法的开头，这样注释，说明方法的功能</p>
+<pre>#---------------------
+# * 描绘问候语
+#---------------------</pre>
+<p>在方法内部 如果过程过长 除了考虑<strong>空行分组</strong> 还可以加上注释 说明具体操作目的</p>
+<pre>def some_meth
+  # 初始化
+  @some_attr ||= {}
+  # 查找指定项
+  f = find_something
+  if f # 如果存在
+    # 执行操作并返回结果
+    operate_with(f)
+  else # 如果不存在
+    # 返回替代品
+    alt
+  end
+end</pre>
+</blockquote>
+<hr />
+<h1>面向对象的编程之基础概念</h1>
+<h4>基础概念 真的只有概念 又长又冗杂</h4>
+<p><strong>方法</strong>就是做一件事情所使用的方法</p>
+<p><strong>对象</strong>就是可以做事情的的主体</p>
+<p><strong>类</strong>就是一个以<em>能够处理的方法<em>对</em>对象</em>所进行的分类 </p>
+<p>这还是有点以理解，这样你就懂了：</p>
+<blockquote>
+<p><em>李华做物理实验</em></p>
+</blockquote>
+<p><em>李华</em>是一个对象，<em>做<em>是一个方法，</em>物理实验</em>是方法的<strong>参数</strong>（至于参数，我们稍后再讲）</p>
+<p>把一个事件用一句话说出来，一般名词是对象，动词是方法，宾语是参数</p>
+<blockquote>
+<p>如果要<em>做物理实验</em>，应该让谁来？应该是<em>懂物理知识的人</em></p>
+</blockquote>
+<p>这里<em>懂物理知识的人</em>就是一个类</p>
+<blockquote>
+<p><em>李华</em>是一个<em>红星中学高二一班的好学生<em>，而</em>红星中学高二一班的好学生</em>都是<em>懂物理知识的人</em></p>
+</blockquote>
+<p>这种情况，我们说：<em>李华</em>的类是<em>红星中学高二一班的好学生</em></p>
+<p>而<em>红星中学高二一班的好学生</em>的**父类<em><em>(也叫基类、超类)是</em>懂物理知识的人</em></p>
+<p>反过来说，类<em>懂物理知识的人</em>的<strong>子类<strong>(也叫派生类)</strong>之一</strong>是<em>红星中学高二一班的好学生</em></p>
+<p>为什么要说“之一”呢？</p>
+<p>因为一个类只能有一个父类，而一个父类可以有多个子类<del>不要问我它妈是谁</del></p>
+<p>有一件显而易见的事：红星中学高二一班的好学生不止李华一个，所以说<em>李华</em>是<em>红星中学高二一班的好学生</em>的一个实际例子</p>
+<p>你要红星中学高二一班的好学生？行啊！这里就有一个例子：李华</p>
+<p>于是，我们说：对象<em>李华</em>是类<em>红星中学高二一班的好学生<em>的一个</em></em>实例**</p>
+<h4>好 现在让我们回顾一下这些概念</h4>
+<p>方法 对象 类 参数 实例 父类 子类</p>
+<p>回顾完毕</p>
+<h4>这些东西有什么意义</h4>
+<p>理解这些东西，可以让脚本的逻辑结构更清晰——这是不言而喻的</p>
+<p>更重要的是，这种模型可以让脚本编写更加简单</p>
+<p><del>最重要的是……ruby是一门面向对象的语言，RGSS3是建立在ruby上的，RGSS3的原装脚本是用这种思想写的 不用不行啊</del></p>
+<p>忽略上面那句，说点实际的：</p>
+<p>方法的作用很简单明了，假设没有方法，而想要<em>扔肥皂</em>给@fux2 和@咕噜 我们得这样：</p>
+<pre>从肥皂盒里拿出一块肥皂
+瞄准@fux2 的脚下
+抬手，把肥皂扔出去
+从肥皂盒里拿出一块肥皂
+瞄准@咕噜 的脚下
+抬手，把肥皂扔出去</pre>
+<p>倘若我们以后还要再扔其他人，就必须再写一遍，如果有方法</p>
+<pre>
+# 目标是参数
+定义方法 扔肥皂给(目标)
+  从肥皂盒里拿出一块肥皂
+  瞄准目标的脚下
+  抬手，把肥皂扔出去
+结束定义</pre>
+<p>我们就可以这样：</p>
+<p><code>扔肥皂给( @fux2 )</code>和<code>扔肥皂给( @咕噜 )</code>。</p>
+<p>以后我们还可以<code>扔肥皂给( @好男人 )</code>。</p>
+<p>至于类呢？</p>
+<p>考虑这样一个方法：</p>
+<p><strong>工作</strong></p>
+<p>它应该是怎样的一个方法，会干什么？</p>
+<p>…………</p>
+<p>……………………</p>
+<p>………………………………</p>
+<p>对于不同的人（对象），同样的方法有不同的诠释</p>
+<p>我们可以为每个人写一个方法：你是这样工作的 他是这样工作的 blablablabla...</p>
+<p>但是我们会发现，总有一些人，他们工作的方法是一样的</p>
+<p>把他们作为一类</p>
+<p>（以<code>#</code>开头的是注释 不影响实际的效果）</p>
+<pre>定义类 清洁工
+  定义方法 工作
+    说 我不知道我要干什么
+  结束定义
+  定义方法 休息
+    说 我在休息
+  结束定义
+结束定义
+#-------
+定义类 擦黑板的 父类是 清洁工
+  定义方法 工作
+    洗拖把
+    前拖拖
+    后拖拖
+    里拖拖
+    外拖拖
+  结束定义
+结束定义
+#-------
+定义类 扫地的 父类是 清洁工
+  定义方法 工作
+    洗抹布
+    左擦擦
+    右擦擦
+    上擦擦
+    下擦擦
+  结束定义
+结束定义</pre>
+<p>然后</p>
+<pre>李华的同学甲 是 一个扫地的 并且 李华的同学乙 是 一个擦黑板的
+李华的同学甲工作 并且 李华的同学乙休息</pre>
+<p>好吧我受够了：</p>
+<pre>(classmateA = Sweeper.new) and (classmateB = Wiper.new)
+classmateA.work and classmateB.rest</pre>
+<p>能看懂吧？</p>
+<p>话归正传，在这个例子中，我们看到了<strong>继承</strong>，继承指的是由父类变出子类的过程，定义一个类的同时，声明它的父类，就完成了继承</p>
+<p>对了 不要关心为什么上面那个扫地的在擦黑板，而擦黑板的坐着休息 他与她在谈恋爱</p>
+<h4>注意啦 现在开始用英文写脚本了</h4>
+<p>定义类，使用<code>class</code>，这个英文单词本身就是类的意思</p>
+<p>声明父类，使用左尖括号<code>&lt;</code>，有点像个箭头，由父类指向子类，表示派生</p>
+<p>定义方法，使用<code>def</code>，英文全名是define，定义的意思，但只用来定义方法</p>
+<p>结束定义统一是<code>end</code>，英文结束的意思</p>
+<p>把上面的俩苦逼同学再写一遍</p>
+<pre># 清洁工
+class Cleaner # 这个Cleaner是名字 必须是大写字母开头想必不用我说
+  def work # 方法名 可以是小写字母、汉字或下划线开头
+    puts "我不知道我要干什么"
+  end
+  # puts是什么？
+  #  向控制台写文字的方法 它会把它的参数写下来
+  # 为什么这里的[我不知道我要干什么]加了双引号？
+  #  你要让电脑明白：这是一句话，不是用来执行的脚本
+  def rest
+    puts "我在休息"
+  end
+end
+#------
+# 擦黑板的
+class Wiper < Cleaner # 这就是上面那个Cleaner
+  def work
+    洗拖把
+    拖来拖去 # 这些方法我就不再一一实现了
+  end
+end
+#------
+# 扫地的
+class Sweeper < Cleaner
+  def work
+    洗抹布
+    擦来擦去
+  end
+end
+</pre>
+<p>这里出现了三个同名的方法：<code>work</code> <code>work</code> 和 <code>work</code>，其实这里暗藏玄机哦~</p>
+<p>第一个<code>work</code> 作为第一次出现的方法，没什么特殊的</p>
+<p>第二个<code>work</code> 它出现在<code>Wiper</code>内部，而<code>Wiper</code>是<code>Cleaner</code>的子类</p>
+<p>很显然，父类有的方法，子类一定有，不然我要<strong>继承</strong>干什么？在这里，你可以看做是<code>Wiper</code>的内部出现了第二次<code>work</code>的定义</p>
+<p>这个定义会覆盖掉之前的定义，这样<code>Wiper</code>有了它独有的<code>work</code></p>
+<p>第三个<code>work</code> 在<code>Sweeper</code>内，也是<code>Cleaner</code>的子类，同理覆盖了从第一个<code>work</code>里继承来的内容</p>
+<p>所以，三个类，有了三个不同的<code>work</code></p>
+<p>…………</p>
+<p>……………………</p>
+<p>………………………………</p>
+<p>好吧，不要打我，就是这么简单，可能我说的有点绕……</p>
+<p>你们可以想到，<code>rest</code>虽然只出现了一次，但是三个类中都是有这个东西的</p>
+<h4>简单的讲一讲模块</h4>
+<p>在上面，我们看到，<em>李华</em>是<em>红星中学高二一班的好学生<em>，而</em>红星中学高二一班的好学生</em>都是<em>懂物理知识的人</em>，我们要<em>做物理实验<em>需要</em>懂物理知识的人</em>所以李华可以胜任。</p>
+<p>（某对象o属于某类A，某类A的父类是某类B，某类B具有某实例方法m，所以对象o具有方法m）</p>
+<p>但是，如果我们现在要<em>调查北京市2006-2011年全市狗尾巴草种群数量变化</em>，需要<em>懂生物知识的人<em>，李华也懂生物，所以我们让他的某个祖先类为</em>懂生物知识的人</em>………………</p>
+<p>好像哪里不对劲？</p>
+<p>我们刚才已经说过，某个类只能有一个父类，这个父类当然也是一个类，它也只能有一个父类……层层下去，关系应该是这样的（<code>&lt;</code>的左边是子类 右边是父类）</p>
+<p>子类 &lt; 父类 &lt; 父类的父类 &lt; 父类他爷爷 &lt; ...... &lt; 祖先类 &lt; ...... (&lt; Object)</p>
+<p>后面那个Object不需要理解，但是你们应该猜得到，它是一个类，是所有类的父类或祖先类</p>
+<p>现在，我们看到，李华的类的父类是<em>懂物理知识的人</em>，而现在他的某一个祖先类是<em>懂生物知识的人</em>…………</p>
+<p>难道说，所有<em>懂物理知识的人</em>都是<em>懂生物知识的人<em>？或者所有</em>懂生物知识的人</em>都是<em>懂物理知识的人</em>？</p>
+<p>坑爹呢你是</p>
+<p>因为我们没有办法把这两个类并排（某个类只能有一个老爸，别管干爹了…………都说了不要问他妈是谁！），而且李华肯定不止拥有这两种能力，比如说，李华还是个<em>学生</em></p>
+<p>这时，我们应该选择最能代表事物根本属性的类作为父类，将另外的作为<strong>模块</strong>（终于讲到你了）</p>
+<p>在模块中，我们可以像在类中一样定义方法，但是<strong>模块不能创建对象</strong></p>
+<p>在这里，我们的<em>李华</em>属于类<em>A红星中学高二一班的学生</em>（问什么在前面加个A？我说过的，类名必须以大写字母开头），这个类应该是这样的继承下来：</p>
+<p>红星中学高二一班的学生 &lt; 红星中学高二年级的学生 &lt; 红星中学的学生 &lt; 高中生 &lt; 学生 &lt; 青少年 &lt; 超人</p>
+<p>与此同时，应该在其中的某个类中<strong>混入</strong>模块</p>
+<p>当我们向某个类A中混入模块M，在M中定义的所有方法，A也能拥有</p>
+<p>模块的混入没有限制，想要几个就要几个</p>
+<p>这里，我们要把<em>懂物理知识的人</em>作为模块，<em>懂生物知识的人<em>做为另一个模块，把它们混入</em>红星中学高二一班的学生</em>中，因为红星中学高二一班的学生都懂这些东西，而红星中学高二年级的学生不一定都懂，好班级就是不一样(打死)</p>
+<p>而且这样还有个好处：当某个老师需要这种能力的时候，我们只需要混入这两个模块，而不需要更改学生或老师的继承结构</p>
+<p>声明模块 使用<code>module</code></p>
+<pre>
+module M懂物理知识的人 # 模块的名字也必须以大写字母开头
+  def 做物理实验(数据)
+    # 出现了新的关键词 case
+    case 数据
+    when "复述质能方程"
+      puts "E = mc<sup>2</sup>"
+      # 还记得puts吗？
+    else
+      puts "我不会"
+    end
+  end
+end
+#-----
+module M懂生物知识的人
+  def 做生物调查(数据)
+    puts "我不会#{数据}" # 这里的写法你们将会很熟悉
+  end
+end
+#-----
+class A红星中学高二一班的学生 < A红星中学高二年级的学生 # 后面这个父类我就不再定义了
+  include M懂物理知识的人
+  include M懂生物知识的人
+  # 这样就混入了
+  # 下面的方法有两个参数
+  def 做(什么, 具体数据)
+    case 什么
+    when "物理实验"
+      做物理实验(具体数据)
+    when "生物调查"
+      做生物调查(具体数据)
+    else
+      puts "我不会"
+    end
+  end
+end
+李华 = A红星中学高二一班的学生.new
+李华.做("物理实验", "复述质能方程")
+#=> E = mc<sup>2</sup>
+</pre>
+<p>什么？做物理实验和复述质能方程有什么关系？你不知道现在的高中生做的实验都是黑板实验吗？</p>
+<h1>厌倦了这些理论吗？我们直接来实践吧~</h1>
+
+</body>
+</html>
+<!-- This document was created with MarkdownPad, the Markdown editor for Windows (http://markdownpad.com) -->
