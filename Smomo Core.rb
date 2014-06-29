@@ -9,6 +9,7 @@
 #  插入到其他Smomo脚本上方
 #------------------------------------------------------------------------------
 # * 更新
+#   V 1.5  2014.06.29 加入远端下载功能
 #   V 1.41 2014.06.21 加入shell_execute系列
 #   V 1.4  2014.06.20 加入括号匹配
 #   V 1.3  2014.06.14 mail并入register 加入两个api moveAE优化并更名transition
@@ -21,8 +22,8 @@
 #==============================================================================
 
 $smomo ||= {}
-if $smomo["Core"].nil? || $smomo["Core"] < 1.41
-$smomo["Core"] = 1.41
+if $smomo["Core"].nil? || $smomo["Core"] < 1.5
+$smomo["Core"] = 1.5
 
 $smomo["RGSS Version"] =
   defined?(Audio.setup_midi) ? :VA : defined?(Graphics.wait) ? :VX : :XP
@@ -72,6 +73,13 @@ $smomo["RGSS Version"] =
 #     lpOperation "open"  nShowCmd 1  hwnd 0  lpParameters ""  lpDirectory ""
 # 
 # * web(url = "") 调用浏览器打开网页
+# 
+# * dl2file(url, file) 丛网址下载内容到文件，file是文件名，需要加后缀名
+#  可以使用绝对路径和相对路径
+# 
+# * dl2cache(url, size = 1024) 从网址读取内容，size是缓存大小
+#  一般情况下无需设置size，如果文件被截断或者出现奇怪的报错，请适度加大该值
+#  将返回一个内容字符串
 # 
 # * deep_clone(obj) 深度复制对象
 # 
@@ -171,7 +179,7 @@ module Smomo
     
   # shell_execute
   def shell_execute(*args)
-    __api "Shell32|ShellExecute|ippppi|i".call *args
+    __api "Shell32|ShellExecute|ippppi|i", *args
   end
   
   # quick_shell
@@ -182,6 +190,17 @@ module Smomo
   # web
   def web(url = "")
     quick_shell(url)
+  end
+  
+  # dl2file
+  def dl2file(url, file)
+    __api "Urlmon|URLDownloadToFile|ippii|i", 0, url, file, 0, 0
+  end
+  
+  # dl2cache
+  def dl2cache(url, size = 1024)
+    __api "Urlmon|URLDownloadToCacheFile|ippiii|i",0,url,buf="\0"*size,size,0,0
+    open(buf.sub(/\0+$/){}, 'rb'){|p| p.read}
   end
   
   # deep_clone
