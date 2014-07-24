@@ -1,17 +1,17 @@
 #==============================================================================
-# ■ 虚拟日历
+# ** 虚拟日历
 #  作者：影月千秋
 #  适用：VA
 #  要求：Smomo脚本核心
 #------------------------------------------------------------------------------
-# ● 简介：
+# * 简介：
 #  模拟时间流逝，并在地图（菜单）进行显示
 #  可以自定义计时规则和显示效果
 #  请为本脚本准备变量和开关，在下方进行设定
 #  本脚本需要Smomo脚本核心，请到此下载：http://tinyurl.com/l9kvg2p
 #  如果链接失效，请到rm.66rpg.com，@余烬之中 或 @影月千秋
 #------------------------------------------------------------------------------
-# ● 使用方法：
+# * 使用方法：
 #  将此脚本插入到其他脚本以下，Main以上，在下面给出的设定区进行设定后即可
 #  在事件中操作指定的变量和开关，便可以获取和改变时间
 #  也可以通过事件脚本进行操作
@@ -26,7 +26,8 @@
 #       【:prd】当前周期的序号，对应在周期名字（如:3）
 #   例：【Smomo.calendar(:zone)】获取时段名
 #------------------------------------------------------------------------------
-# ● 版本：
+# * 版本：
+#   V 2.7 2014.07.24 修正了事件推进时不刷新周期的问题
 #   V 2.6 2014.05.24 修正了日期出现0的BUG
 #   V 2.5 2014.04.06 规范化脚本 消除冗余 重建逻辑结构 需要依赖Smomo脚本核心
 #   V 2.4 2014.01.31 修正读档时报错的BUG
@@ -36,7 +37,7 @@
 #   V 2.0 2013.10.04 基本重写
 #   V 1.0 2013.08.31 公开
 #------------------------------------------------------------------------------
-# ● 声明：
+# * 声明：
 #   本脚本由来自【影月千秋】，使用和转载请保留此信息
 #==============================================================================
 
@@ -46,7 +47,7 @@ elsif $smomo["Calendar"].nil?
 $smomo["Calendar"] = true
 
 #==============================================================================
-# ■ Smomo::Calendar
+# ** Smomo::Calendar
 #==============================================================================
 module Smomo::Calendar
   Menu = true
@@ -66,7 +67,7 @@ module Smomo::Calendar
   # 设定占用变量的起始号 会占用以这个号码为开端的连续几个号码对应的游戏变量
   
   # 继续设置需要了解的事实：
-  #  脚本内部计时用一个数字来累加 然后再依次推进到下一单位 把最开始的数字叫计时变量
+  #  脚本内部用一个数字累加计时 然后依次推进到下一单位 把最开始的数字叫计时变量
   
   Speed = 100
   # 设定游戏时间进行速度占用变量，代表经过多少帧后游戏内部计时变量增加一
@@ -153,7 +154,7 @@ end
 #==============================================================================
 
 #==============================================================================
-# ■ Scene_Menu 建立菜单场景的窗口
+# ** Scene_Menu 建立菜单场景的窗口
 #==============================================================================
 class Scene_Menu
   _def_ :start do |*args|
@@ -163,7 +164,7 @@ class Scene_Menu
   end
 end
 #==============================================================================
-# ■ Scene_Map 建立地图场景的窗口
+# ** Scene_Map 建立地图场景的窗口
 #==============================================================================
 class Scene_Map
   _def_ :create_all_windows do |*args|
@@ -174,7 +175,7 @@ class Scene_Map
   _def_ :call_menu do |*args| @mocalendar_window.contents.clear end
 end
 #============================================================================
-# ■ Window_MoMenuCalendar 菜单画面中，显示当前游戏内部虚拟日历的窗口
+# ** Window_MoMenuCalendar 菜单画面中，显示当前游戏内部虚拟日历的窗口
 #============================================================================
 class Window_MoMenuCalendar < Window_Base
   include Smomo::Calendar
@@ -186,6 +187,7 @@ class Window_MoMenuCalendar < Window_Base
       return
     end
     Smomo::Calendar.ensure_time_legal
+    Smomo::Calendar.check_period_and_zone
     height = Format[:menu].size * 30 + 20
     super(0, gold_window.y - height, gold_window.width, height)
     format = Smomo.deep_clone(Format[:menu])
@@ -203,7 +205,7 @@ class Window_MoMenuCalendar < Window_Base
   end
 end
 #============================================================================
-# ■ Window_MoMapCalendar 地图画面中，显示当前游戏内部虚拟日历的窗口
+# ** Window_MoMapCalendar 地图画面中，显示当前游戏内部虚拟日历的窗口
 #                         但本质上是一个精灵
 #============================================================================
 class Window_MoMapCalendar < Window_Base
@@ -225,12 +227,14 @@ class Window_MoMapCalendar < Window_Base
       @sprite.x = @use ? 0 : Graphics.width
       refresh
     else
-      refresh if @use && Graphics.frame_count % $game_variables[Speed] == 0
+      refresh if @use && Graphics.frame_count % $game_variables[Speed] == 0 ||
+      $game_map.need_refresh
     end
   end
   
   def refresh
     Smomo::Calendar.ensure_time_legal
+    Smomo::Calendar.check_period_and_zone
     contents.clear
     contents.gradient_fill_rect(0, 0, @sprite.width, @sprite.width,
     Color.new(30, 30, 30), Color.new(0, 0, 0, 0))
@@ -248,7 +252,7 @@ class Window_MoMapCalendar < Window_Base
     end
   end
   #------------------------------------------------------------------------
-  # ● 偷梁换柱 如果不明白这段的意义 请勿随意删除
+  # * 偷梁换柱 如果不明白这段的意义 请勿随意删除
   #------------------------------------------------------------------------
   def contents
     @sprite.bitmap
@@ -259,12 +263,12 @@ class Window_MoMapCalendar < Window_Base
 end
 #=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+#
 #------------------------------------------------------------------------------#
-#                               请勿跨过这块区域                                #
+                               "请勿跨过这块区域"
 #------------------------------------------------------------------------------#
 #+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=#
 
 #==============================================================================
-# ■ Smomo::Calendar
+# ** Smomo::Calendar
 #==============================================================================
 module Smomo::Calendar
   PeriodSize = Zone.inject(0){|s, (l)| s + l}
@@ -288,7 +292,7 @@ module Smomo::Calendar
       check_period_and_zone
     end
     
-    def i_look_into_the_sky_as_time_passed_by
+    def i_look_into_the_sky_as_time_passes_by
       return unless $game_switches[Use]
       return if $game_message.visible
       return unless Graphics.frame_count % $game_variables[Speed] == 0
@@ -340,22 +344,34 @@ module Smomo::Calendar
   end
 end
 #==============================================================================
-# ■ Smomo.calendar(*a, &b)
+# ** Smomo.calendar(*a, &b)
 #==============================================================================
 def Smomo.calendar(*a, &b)
   Smomo::Calendar.interpreter(*a, &b)
 end
+
 #==============================================================================
-# ■ Scene_Map
+# ** Game_Variables
+#==============================================================================
+class Game_Variables
+  _def_ :on_change, :b do |*args|
+    Smomo::Calendar.ensure_time_legal
+    Smomo::Calendar.check_period_and_zone
+    Smomo::Calendar.change_tone true
+  end
+end
+
+#==============================================================================
+# ** Scene_Map
 #==============================================================================
 class Scene_Map
   _def_ :update do |*args|
-    Smomo::Calendar.i_look_into_the_sky_as_time_passed_by
+    Smomo::Calendar.i_look_into_the_sky_as_time_passes_by
   end
   _def_ :post_transfer, :b do |*args| Smomo::Calendar.change_tone(true) end
 end
 #==============================================================================
-# ■ DataManager
+# ** DataManager
 #==============================================================================
 class << DataManager
   _def_ :setup_new_game do Smomo::Calendar.ini end
@@ -373,6 +389,6 @@ else # if $smomo
 end
 #==============================================================================#
 #=====                        =================================================#
-           "■ 脚 本 尾"
+            "脚 本 尾"
 #=====                        =================================================#
 #==============================================================================#
