@@ -18,7 +18,7 @@ def decrypt(path, output = "Decryption", islog = true)
   end
   Dir.mkdir output
   
-  logfile = File.open output + "\\" + "decrypt.log", "w+" if islog
+  logfile = File.open output + "\\" + "Decrypt.log", "w+" if islog
   log = ->(string){logfile.puts string if islog; puts string}
   
   log.("Begin")
@@ -26,68 +26,57 @@ def decrypt(path, output = "Decryption", islog = true)
   log.("")
   
   log.("Try to open archive...")
-  file = open path, "rb"
-  if file.read(8) != "RGSSAD\0\3"
+  archive = open path, "rb"
+  if archive.read(8) != "RGSSAD\0\3"
     log.("Standard RPG Maker VX Ace Encrypted Archive Expected!")
     raise TypeError, "Standard RPG Maker VX Ace Encrypted Archive Expected!"
   end
   log.("Archive opened successfully.")
   
-  key = file.read(4).unpack("L")[0]
-  key = key * 9 + 3
+  key = archive.read(4).unpack("L")[0] * 9 + 3
   
-  offset   = []
-  length   = []
-  magickey = []
-  filename = []
+  files = []
   
   log.("")
   
   log.("Analyse Files...")
   i = 0
   loop do
-    break if (offset[i] = file.read(4).unpack("L")[0] ^ key) == 0
-    length[i]   = file.read(4).unpack("L")[0] ^ key
-    magickey[i] = file.read(4).unpack("L")[0] ^ key
-    flength     = file.read(4).unpack("L")[0] ^ key
-    filename[i] = file.read(flength)
-    _ = "L" * (flength / 4 + (flength % 4 > 0 ? 1 : 0))
-    filename[i] += "\0" * (4 - flength % 4)
-    filename[i] = filename[i].unpack(_).map{|x| x ^ key}.pack(_)
-    filename[i] = filename[i][0, flength]
-    log.("-File:#{filename[i]}\t\tOffset:#{offset[i]}\tLength:#{length[i]}")
+    break if (offset = archive.read(4).unpack("L")[0] ^ key) == 0
     i += 1
+    length   = archive.read(4).unpack("L")[0] ^ key
+    magickey = archive.read(4).unpack("L")[0] ^ key
+    flength     = archive.read(4).unpack("L")[0] ^ key
+    filename = archive.read(flength)
+    _ = "L" * ((flength + 3) / 4)
+    filename += "\0" * 4
+    filename = filename.unpack(_).map{|x| x ^ key}.pack(_)[0, flength]
+    log.("-File ##{i}: #{filename}\t\tOffset: #{offset}\tLength: #{length}")
+    files.push [offset, length, magickey, filename]
   end
-  log.("Total: #{i}")
+  log.("All files analysed.")
   
   log.("")
   
   log.("Extract Files...")
-  i = 0
-  loop do
-    break if i == filename.size
-    log.("-Extracting File: #{filename[i]}")
-    file.pos = offset[i]
-    contents = file.read(length[i])
-    _ = "L" * (length[i] / 4 + (length[i] % 4 > 0 ? 1 : 0))
-    contents += "\0" * (4 - length[i] % 4)
-    contents = contents.unpack(_).map{|x|
-      r = x ^ magickey[i]
-      magickey[i] = magickey[i] * 7 + 3 % (1 << (4 * 8))
-      r
-    }.pack(_)
-    contents = contents[0, length[i]]
-    filename[i].scan(/^(.*)\\/).each{|(d)|
+  files.each_with_index do |(offset, length, magickey, filename), i|
+    log.("-Extracting File ##{i + 1}: #{filename}")
+    archive.pos = offset
+    contents = archive.read(length)
+    _ = "L" * ((length + 3) / 4)
+    contents = (contents + "\0" * 4).unpack(_).collect{|x|
+      unit = x ^ magickey
+      magickey = magickey * 7 + 3
+      unit
+    }.pack(_)[0, length]
+    filename.scan(/^(.*)\\/).each{|(d)|
       next if Dir.exist? _ = output + "\\" + d
       Dir.mkdir _
     }
-    File.open output + "\\" + filename[i], "wb" do |data|
-      data.write contents
-    end
+    File.open output + "\\" + filename, "wb" do |data| data.write contents end
     log.("--Succeed.")
-    i += 1
   end
-  log.("Total: #{i}")
+  log.("All files extracted.")
   
   log.("")
   
@@ -101,17 +90,13 @@ def decrypt(path, output = "Decryption", islog = true)
   
   flag = true
   
-  %W{Actors.rvdata2 Animations.rvdata2 Armors.rvdata2 Classes.rvdata2
-    CommonEvents.rvdata2 Enemies.rvdata2 Items.rvdata2 Map001.rvdata2
-    MapInfos.rvdata2 Scripts.rvdata2 Skills.rvdata2 States.rvdata2
-    System.rvdata2 Tilesets.rvdata2 Troops.rvdata2 Weapons.rvdata2
-  }.each{|x|
+  files.each{|offset, length, magickey, filename|
     begin
-      load_data(output + "\\Data\\" + x)
-      log.("-#{x} OK!")
+      load_data(output + "\\" + filename)
+      log.("-#{filename} OK!")
     rescue
-      log.("-#{x} Failed!")
       flag = false
+      log.("-#{filename} Failed!")
     end
   }
   
@@ -124,5 +109,5 @@ rescue => e
   end rescue nil
 ensure
   logfile.close if islog rescue nil
-  file.close rescue nil
+  archive.close rescue nil
 end
