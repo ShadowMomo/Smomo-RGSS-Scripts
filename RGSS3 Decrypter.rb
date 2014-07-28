@@ -51,7 +51,8 @@ def decrypt(path, output = "Decryption", islog = true)
     _ = "L" * ((flength + 3) / 4)
     filename += "\0" * 4
     filename = filename.unpack(_).map{|x| x ^ key}.pack(_)[0, flength]
-    log.("-File ##{i}: #{filename}\t\tOffset: #{offset}\tLength: #{length}")
+    log.("-File ##{i}: #{filename}")
+    log.("--Offset: #{offset}\tLength: #{length}")
     files.push [offset, length, magickey, filename]
   end
   log.("All files analysed.")
@@ -90,13 +91,14 @@ def decrypt(path, output = "Decryption", islog = true)
   
   flag = true
   
-  files.each{|offset, length, magickey, filename|
+  files.each_with_index{|(offset, length, magickey, filename), i|
+    log.("-Checking File ##{i + 1}: #{filename}")
     begin
       load_data(output + "\\" + filename)
-      log.("-#{filename} OK!")
+      log.("--OK!")
     rescue
       flag = false
-      log.("-#{filename} Failed!")
+      log.("--Failed!")
     end
   }
   
@@ -111,3 +113,5 @@ ensure
   logfile.close if islog rescue nil
   archive.close rescue nil
 end
+
+decrypt("Game.rgss3a")
