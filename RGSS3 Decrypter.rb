@@ -53,7 +53,7 @@ def decrypt(path, output = "Decryption", islog = true)
     filename = filename.unpack(_).map{|x| x ^ key}.pack(_)[0, flength]
     log.("-File ##{i}: #{filename}")
     log.("--Offset: #{offset}\tLength: #{length}")
-    files.push [offset, length, magickey, filename]
+    files.push [offset, length, magickey, filename.force_encoding('utf-8')]
   end
   log.("All files analysed.")
   
