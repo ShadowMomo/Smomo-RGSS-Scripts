@@ -11,6 +11,7 @@
 #     LZW.dec(LZW.com("somestring", "T"), "T") #=> "somestring"
 #=============================================================================
 module LZW
+  # module_function
   module_function
   # Compressor
   def com(charstream, spliter = "#")
