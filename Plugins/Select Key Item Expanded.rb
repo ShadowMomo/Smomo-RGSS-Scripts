@@ -20,7 +20,7 @@
 # * License                                                                    #
 #  Free to use in any games. I will appreciate it if you keep my name.         #
 #==============================================================================#
-(MoVar[:skie] = key_item) rescue MoVar = Struct.new(:skie).new(:key_item)
+(MoVar[:skie] = :key_item) rescue MoVar = Struct.new(:skie).new(:key_item)
 class Game_Interpreter
   def mca_change(symbol)
     MoVar[:skie] = symbol
