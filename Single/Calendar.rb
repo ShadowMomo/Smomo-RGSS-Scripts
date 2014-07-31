@@ -27,6 +27,7 @@
 #   例：【Smomo.calendar(:zone)】获取时段名
 #------------------------------------------------------------------------------
 # * 版本：
+#   V 3.0 2014.07.31 修正了2.7以为成功实际上未修正成功的问题 并做了一些其他调整
 #   V 2.9 2014.07.28 修正了Map不能为:none从2.3版延续过来的傻逼错误
 #   V 2.8 2014.07.26 对2.7的小修正 并修改了自定义提示语
 #   V 2.7 2014.07.24 修正了事件推进时不刷新周期的问题
@@ -64,7 +65,7 @@ module Smomo::Calendar
   
   Use = 16
   # 设定占用开关，只有当此开关打开时，才会计时
-   # 打开开关前 请确保下方Speed对应的变量不为0
+   # ！打开开关前 请确保下方Speed对应的变量不为0！
   
   Var = 81
   # 设定占用变量的起始编号 会占用以这个号码为开端的连续几个号码对应的游戏变量
@@ -75,8 +76,8 @@ module Smomo::Calendar
   Speed = 100
   # 设定游戏时间进行速度占用变量，代表经过多少帧后游戏内部计时变量增加一
    # 一般情况下 1秒60帧
-   # 再打开Use对应的开关前 请确保这个变量不为0
-   # 请确保这个变量不与上面Var的变量（及其包括的范围内的变量）重合
+   # 再打开Use对应的开关前 请确保这个常量不为0
+   # 请确保这个常量不与上面Var的常量（及其包括的范围内的变量）重合
 
   System = [
     # ["单位", 满多少进一（比最大值大一）, 是否以零起始（true/false）],
@@ -89,12 +90,12 @@ module Smomo::Calendar
   # 设定计时制，最后一个数据的单位与计时变量的单位统一
    # 可以突破公元历法的限制
     # 比如：636号时间线3145纪6887年6月4日 21:39:44:03
-   # 这里有几项 上面的Var就会占用几个变量
-   # 从上往下 单位由小到大 如：分-->时-->日-->月-->年
+   # ！这里有几项 上面的Var就会占用几个变量！
+   # ！从上往下！ 单位由小到大 如：分-->时-->日-->月-->年
    # 有的单位允许以0为值 比如 3:00 有的不行 比如 3月1日
     # 默认不允许0值 如果需要允许 请将“以零起始”填为【true】
   
-  Start = [55, 19, 24, 5, 2014]
+  Start = [19, 14, 31, 7, 2014]
   # 设置游戏起始时间 与上面的单位从上到下依次对应
   
   PeriodName = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
@@ -144,7 +145,7 @@ module Smomo::Calendar
   }
   # 输出格式 此处写多少行 游戏内就会依次对应输出多少行
    # 每一行的内部不要使用空格（ ），空格用下划线（_）代替
-   # 尽量不要使用英文感叹号(!)，一定要用请在之前加上反斜杠（\!）
+   # 尽量不要使用英文感叹号(!)，如果一定要用请在之前加上反斜杠（\!）
    # 使用【<符号>】的形式来代替指定的数据 其他的文字用于修饰
    # 可用的符号
     # 在上面计时制中设定的单位 可以加上一个数字来代表格式化位数
@@ -282,19 +283,22 @@ end
 # ** Smomo::Calendar
 #==============================================================================
 module Smomo::Calendar
+  # 预处理
   PeriodSize = Zone.inject(0){|s, (l)| s + l}
   Zone.each_with_index{|z, i| z[0] += i == 0 ? 0 : Zone[i - 1][0]}
   _ = Smomo.deep_clone(Zone)
   _.each_with_index{|z, i| Zone[i][0] = (i == 0 ? 0 : _[i - 1][0])...z[0]}
-  
   class << self
-    attr_accessor :zone, :prd
+    attr_reader :zone, :prd, :ticking
+    attr_accessor :period
     define_method(:data){[@zone, @tone, @need_change, @period, @prd]}
     define_method(:data=){|d| @zone, @tone, @need_change, @period, @prd = d}
-    define_method(:interpreter){|type| type == :all ? data : eval(%!@#{type}!)}
-    
+    define_method(:function){|type| type == :all ? data : eval(%!@#{type}!)}
+    # 初始化
     def ini
+      @ticking = true
       System.each_index{|i| $game_variables[Var + i] = Start[i]}
+      @ticking = false
       @zone = ""
       @tone = Tone.new(0, 0, 0, 0)
       @need_change = false
@@ -302,21 +306,33 @@ module Smomo::Calendar
       @prd = Start_PeriodName
       check_period_and_zone
     end
-    
+    # 初始化周期
+    def init_period
+      sta = Start.reverse
+      sta.each_with_index do |n, i|
+        next if i == sta.size - 1
+        sta[i + 1] += n * System.reverse[i + 1][1]
+      end
+      sta.reverse[0] % PeriodSize
+    end
+    # 计时
     def i_look_into_the_sky_as_time_passes_by
       return unless $game_switches[Use]
       return if $game_message.visible
       return unless Graphics.frame_count % $game_variables[Speed] == 0
+      # 如果在这里报错 一定是你没有设置Speed所对应的变量的值
+      @ticking = true
       $game_variables[Var] += 1
-      ensure_time_legal
       @period += 1
-      @prd += (@period = 0) + 1 if @period >= PeriodSize
-      @prd = 0 if @prd >= PeriodName.size
+      ensure_time_legal
+      ensure_period_legal
       check_period_and_zone
       change_tone if TimeZone
+      @ticking = false
     end
-    
+    # 确保变量在范围内
     def ensure_time_legal
+      @ticking = true
       System.each_with_index do |(u, m, o), i|
         while $game_variables[Var + i] > m - (o ? 1 : 0)
           $game_variables[Var + i] -= m
@@ -327,22 +343,19 @@ module Smomo::Calendar
           $game_variables[Var + i + 1] -= 1
         end
       end
+      @ticking = false
     end
-    
-    def init_period
-      sta = Start.reverse
-      sta.each_with_index do |n, i|
-        next if i == sta.size - 1
-        sta[i + 1] += n * System.reverse[i + 1][1]
-      end
-      sta.reverse[0] % PeriodSize
+    # 确保时段在范围内
+    def ensure_period_legal
+      @prd += (@period = 0) + 1 if @period >= PeriodSize
+      @prd = 0 if @prd >= PeriodName.size
     end
-    
+    # 检查周期别名和时段
     def check_period_and_zone
       tone, @zone = Zone.find{|(r, t, n)| r.include?(@period)}[1, 2]
       @tone == tone ? nil : [@tone = tone, @need_change = true]
     end
-    
+    # 改变画面色调
     def change_tone(pt = false)
       return unless @need_change || pt
       @need_change = false
@@ -358,7 +371,38 @@ end
 # ** Smomo.calendar(*a, &b)
 #==============================================================================
 def Smomo.calendar(*a, &b)
-  Smomo::Calendar.interpreter(*a, &b)
+  Smomo::Calendar.function(*a, &b)
+end
+#==============================================================================
+# ** Game_Switches
+#==============================================================================
+class Game_Switches
+  _def_ :on_change do
+    Smomo::Calendar.change_tone
+  end
+end
+#==============================================================================
+# ** Game_Variables
+#==============================================================================
+class Game_Variables
+  _def_ :[]=, :c do |old, variable_id, value|
+    if Smomo::Calendar.ticking
+      old.call(variable_id, value)
+    else
+      min = Smomo::Calendar::Var
+      max = min + Smomo::Calendar::System.size - 1
+      if variable_id.between?(min, max)
+        Smomo::Calendar.period += value - @data[variable_id]
+        old.call(variable_id, value)
+        Smomo::Calendar.ensure_time_legal
+        Smomo::Calendar.ensure_period_legal
+        Smomo::Calendar.check_period_and_zone
+        Smomo::Calendar.change_tone
+      else
+        old.call(variable_id, value)
+      end
+    end
+  end
 end
 #==============================================================================
 # ** Scene_Map
