@@ -12,11 +12,16 @@
 #=============================================================================
 
 def decrypt(path, output = "Decryption", islog = true)
+  mkdir = ->(path){
+    path.scan(/^(.*)\\/){ mkdir.($1) }
+    Dir.mkdir path unless Dir.exist? path
+  }
+  
   if Dir.exist? output
     output += Time.now.strftime("%j-%H-%M-%S")
     msgbox "Directory already exists! Will extract to new directory: #{output}"
   end
-  Dir.mkdir output
+  mkdir.(output)
   
   logfile = File.open output + "\\" + "Decrypt.log", "w+" if islog
   log = ->(string){logfile.puts string if islog; puts string}
@@ -70,10 +75,7 @@ def decrypt(path, output = "Decryption", islog = true)
       magickey = magickey * 7 + 3
       unit
     }.pack(_)[0, length]
-    filename.scan(/^(.*)\\/).each{|(d)|
-      next if Dir.exist? _ = output + "\\" + d
-      Dir.mkdir _
-    }
+    filename.scan(/^(.*)\\/){ mkdir.(output + "\\" + $1) }
     File.open output + "\\" + filename, "wb" do |data| data.write contents end
     log.("--Succeed.")
   end
@@ -114,4 +116,4 @@ ensure
   archive.close rescue nil
 end
 
-decrypt("Game.rgss3a")
+decrypt("Encryption\\Game.rgss3a")
