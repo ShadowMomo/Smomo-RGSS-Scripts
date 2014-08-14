@@ -13,23 +13,27 @@ module AStar
   module_function
   def make_route(origin, target)
     target = Point.new(*target)
+    is_passable = ->(x, y, d){
+      x = $game_map.round_x_with_direction(x, d)
+      y = $game_map.round_y_with_direction(y, d)
+      $game_map.valid?(x, y) && $game_map.passable?(x, y, d)
+    }
     return [] unless [2, 4, 6, 8].any? do |d|
       x = target.x + (d == 4 ? -1 : d == 6 ? 1 : 0)
       y = target.y + (d == 8 ? -1 : d == 2 ? 1 : 0)
-      $game_map.passable?(x, y, 10 - d)
+      is_passable.(x, y, 10 - d)
     end
-    open  = [origin = Point.new(*origin).tap{|o|
-      o.g = 0
-      o.h = (o.x - target.x).abs + (o.y - target.y).abs
-    }]
+    origin = Point.new(*origin)
+    target.g = 0
+    target.h = (target.x - origin.x).abs + (target.y - origin.y).abs
+    open  = [target]
     close = []
     include_open  = ->(x, y){  !open.find{|pt| pt.x == x && pt.y == y}.nil? }
     include_close = ->(x, y){ !close.find{|pt| pt.x == x && pt.y == y}.nil? }
-    exist = false
     until open.empty?
       nod = open.shift
       [2, 4, 6, 8].each do |d|
-        next unless $game_map.passable?(nod.x, nod.y, d)
+        next unless is_passable.(nod.x, nod.y, d)
         x = nod.x + (d == 4 ? -1 : d == 6 ? 1 : 0)
         y = nod.y + (d == 8 ? -1 : d == 2 ? 1 : 0)
         if include_open.(x, y)
@@ -42,23 +46,23 @@ module AStar
           child = Point.new(x, y)
           child.d = 10 - d
           child.g = nod.g + 10
-          child.h = (x - target.x).abs + (y - target.y).abs
+          child.h = (x - origin.x).abs + (y - origin.y).abs
           open.unshift child
           open.sort_by!{|pt| pt.g + pt.h}
         end
       end
       close.push nod
-      break exist = true if include_close.(target.x, target.y)
+      break if include_close.(origin.x, origin.y)
     end
-    return [] unless exist
+    return [] unless include_close.(origin.x, origin.y)
     routes = []
-    nod = close.find{|pt| pt.x == target.x && pt.y == target.y}
-    until nod.x == origin.x && nod.y == origin.y
-      routes.push 10 - nod.d
+    nod = close.find{|pt| pt.x == origin.x && pt.y == origin.y}
+    until nod.x == target.x && nod.y == target.y
+      routes.push nod.d
       x = nod.x + (nod.d == 4 ? -1 : nod.d == 6 ? 1 : 0)
       y = nod.y + (nod.d == 8 ? -1 : nod.d == 2 ? 1 : 0)
       nod = close.find{|pt| pt.x == x && pt.y == y}
     end
-    routes.reverse
+    routes
   end
 end
