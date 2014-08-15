@@ -92,7 +92,7 @@ end
 class Scene_Shop
   alias :item_price_rate_selling_price :selling_price
   def selling_price
-    if $game_switches[Smomo::ItemPriceRate::Using]
+    (if $game_switches[Smomo::ItemPriceRate::Using]
       rate = Smomo::ItemPriceRate::Match_Reg =~ @item.note ? $1.to_i : 50
       rate += $game_variables[Smomo::ItemPriceRate::Selling]
       @buy_window.make_item_list
@@ -101,7 +101,7 @@ class Scene_Shop
     else
       item_price_rate_selling_price
     end * (@goods.none?{|g| g[1] == @item.id} ?
-    Smomo::ItemPriceRate::OPTIONAL[:profiteer] : 1)
+    Smomo::ItemPriceRate::OPTIONAL[:profiteer] : 1)).round
   end
 end
 
