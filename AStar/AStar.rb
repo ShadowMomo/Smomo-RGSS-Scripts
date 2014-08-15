@@ -11,12 +11,15 @@ module AStar
     end
   end
   module_function
-  def make_route(origin, target)
+  def make_route(origin, target, *characters)
     target = Point.new(*target)
     is_passable = ->(x, y, d){
       x = $game_map.round_x_with_direction(x, d)
       y = $game_map.round_y_with_direction(y, d)
-      $game_map.valid?(x, y) && $game_map.passable?(x, y, d)
+      $game_map.valid?(x, y) && $game_map.passable?(x, y, d) &&
+      $game_map.events_xy_nt(x, y).all? do |event|
+        !event.normal_priority? || characters.any?{|c| c.id == event.id}
+      end
     }
     return [] unless [2, 4, 6, 8].any? do |d|
       x = target.x + (d == 4 ? -1 : d == 6 ? 1 : 0)
@@ -33,9 +36,9 @@ module AStar
     until open.empty?
       nod = open.shift
       [2, 4, 6, 8].each do |d|
-        next unless is_passable.(nod.x, nod.y, d)
         x = nod.x + (d == 4 ? -1 : d == 6 ? 1 : 0)
         y = nod.y + (d == 8 ? -1 : d == 2 ? 1 : 0)
+        next unless is_passable.(x, y, 10 - d)
         if include_open.(x, y)
           nex = open.find{|pt| pt.x == x && pt.y == y}
           if nod.g + 10 < nex.g
