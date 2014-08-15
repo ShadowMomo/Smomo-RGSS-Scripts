@@ -4,6 +4,7 @@
 # * 主要功能
 #  * 跳过标题
 #  * 快速注释一整段脚本
+#  * 事件脚本出错时正确定位到脚本框
 #  * 缺少素材时弹框提示，但并不退出游戏
 #  * 异常堆栈（不常用）
 #------------------------------------------------------------------------------
@@ -15,6 +16,9 @@
 #------------------------------------------------------------------------------
 # * 跳过标题的设定项
   skiptitle = true # 是否跳过标题
+#------------------------------------------------------------------------------
+# * 事件脚本出错定位的设定项
+  eventbinding = true # 是否启用
 #------------------------------------------------------------------------------
 # * 快捷注释的设定项
   easydisable = [
@@ -54,6 +58,11 @@
 #   这时请使用【weaken{原语句} rescue!】的形式（或者rescue: rescue; rescued.）
 #==============================================================================
 
+mainscript = $RGSS_SCRIPTS.find do |script|
+  script[3] =~ /rgss_main/ && script[3] !~ /e2fa8436e6a77aef37280d72ef68105e/
+end
+
+
 puts "================================" if easydisable[1]
 
 easydisable[2] = []
@@ -67,7 +76,9 @@ $RGSS_SCRIPTS.each do |script|
   end
 end
 
-puts easydisable[2], "The scripts listed are disabled." if easydisable[1]
+puts  easydisable[2], "       上述脚本已被禁用。" if easydisable[1]
+puts "================================" if easydisable[1]
+puts
 
 if skiptitle
   function = %Q!class Scene_Title
@@ -85,13 +96,22 @@ if skiptitle
     def transition_speed
       0
     end
-  end!
-  $RGSS_SCRIPTS.each do |script|
-    if script[1] =~ /rgss_main/
-      script[3] = function + script[3]
-      break
+  end;!
+  mainscript[3] = function + mainscript[3]
+end
+
+if eventbinding
+  function = %Q!class Game_Interpreter
+    def command_355
+      script = @list[@index].parameters[0] + "\n"
+      while next_event_code == 655
+        @index += 1
+        script += @list[@index].parameters[0] + "\n"
+      end
+      eval(script, binding)
     end
-  end
+  end;!
+  mainscript[3] = function + mainscript[3]
 end
 
 if nofilemsg
