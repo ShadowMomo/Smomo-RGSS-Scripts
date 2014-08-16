@@ -122,8 +122,6 @@ if nofilemsg
     rescue Errno::ENOENT
       msgbox "图像文件[#{ args[0] }]未找到！"
       debug_kit_for_scripters_new(1, 1)
-    rescue RGSSError
-      debug_kit_for_scripters_new(1, 1)
     end
   end
   class << Audio
