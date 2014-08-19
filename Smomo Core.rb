@@ -1,4 +1,4 @@
-﻿#==============================================================================
+#==============================================================================
 # ** Smomo脚本核心
 #  作者：影月千秋
 #------------------------------------------------------------------------------
@@ -9,6 +9,7 @@
 #  插入到其他Smomo脚本上方
 #------------------------------------------------------------------------------
 # * 更新
+#   V 1.51 2014.08.19 去除括号匹配 优化traverse_dir
 #   V 1.5  2014.06.29 加入远端下载功能
 #   V 1.41 2014.06.21 加入shell_execute系列
 #   V 1.4  2014.06.20 加入括号匹配
@@ -77,16 +78,15 @@ $smomo["Core"] = 1.5
 # * dl2file(url, file) 丛网址下载内容到文件，file是文件名，需要加后缀名
 #  可以使用绝对路径和相对路径
 # 
-# * dl2cache(url, size = 1024) 从网址读取内容，size是缓存大小
-#  一般情况下无需设置size，如果文件被截断或者出现奇怪的报错，请适度加大该值
-#  将返回一个内容字符串
+# * dl2cache(url, size = 1024) 从网址读取内容，size是缓存文件的文件名缓存大小
+#  一般情况下无需设置size，如果出现奇怪的报错，请适度加大该值
+#  该方法将返回一个字符串，内容为目标网址的内容
 # 
 # * deep_clone(obj) 深度复制对象
 # 
-# * traverse_dir(file_path = "."){} 遍历目录
+# * traverse_dir(path = ".")
+# * traverse_dir(path = "."){|filename|} 遍历目录
 # 
-# * mBrackets(str, brackets = {'(' => ')', '[' => ']', '{' => '}', '<' => '>'})
-#   对字符串进行括号匹配
 #============================================================================
 module Smomo
   module_function
@@ -209,40 +209,9 @@ module Smomo
   end
     
   # traverse_dir
-  def traverse_dir(file_path = ".")
-    return unless block_given?
-    if FileTest.directory? file_path
-      Dir.foreach(file_path) do |file|
-        traverse_dir("#{file_path}/#{file}"){|x| yield x} if
-        file != "." && file != ".."
-      end
-    else
-      yield file_path
-    end
-  end
-  
-  # mBrackets
-  def mBrackets str, brackets = {'(' => ')', '[' => ']', '{' => '}', '<' => '>'}
-    matched = []
-    result = [""]
-    valid = [0]
-    str.each_char do |c|
-      valid.each{|v| result[v].concat(c)}
-      if brackets.key?(c)
-        matched.push(c)
-        valid.push(result.size)
-        result.push("")
-      elsif brackets.value?(c)
-        if brackets[matched[-1]] == c
-          result[valid[-1]].chop!
-          valid.pop
-          matched.pop
-        else
-          raise ArgumentError, "False Matching!"
-        end
-      end
-    end
-    result
+  def traverse_dir(path = ".")
+    block_given? ? Dir.glob("#{path}/**/*"){|f| yield f if FileTest.file? f} :
+    Dir.glob("#{path}/**/*").select{|f| FileTest.file? f}
   end
 end # Smomo
 
