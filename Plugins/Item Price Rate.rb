@@ -115,7 +115,7 @@ class Window_ShopBuy
     @data.reject!{|item|
       i = item.id
       item.is_a?(RPG::Item) && sio[:lfcalendar][i] &&
-      sio[:lfcalendar][i] > sio[:limitForCalendar][i]
+      sio[:lfcalendar][i] >= sio[:limitForCalendar][i]
     }
   end
 end
@@ -141,7 +141,7 @@ class Scene_Shop
     item_price_rate_do_buy number
     sio = Smomo::ItemPriceRate::OPTIONAL
     if @item.is_a?(RPG::Item) && sio[:lfcalendar][@item.id]
-      sio[:lfcalendar][@item.id] += numbrt
+      sio[:lfcalendar][@item.id] += number
     end
   end
   alias :item_price_rate_max_buy :max_buy
