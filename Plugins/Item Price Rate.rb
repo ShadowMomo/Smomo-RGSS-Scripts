@@ -69,7 +69,10 @@ module Smomo
       # 配合虚拟日历系统(http://tinyurl.com/psamf9t)使用
       # 欲使此功能生效，请将虚拟日历系统置于此系统上方
       # 使某物品被买了特定数目之后会停售 直到第二天才恢复
+      # 仅对物品有效 对武器和防具无效
         # 物品ID => 限制数目,
+        3 => 4,
+        6 => 158,
       },
     }
 #=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+#
@@ -97,6 +100,19 @@ class Window_ShopBuy
     else
       item_price_rate_price(item)
     end
+  end
+  #--------------------------------------------------------------------------
+  # * Create Item List
+  #--------------------------------------------------------------------------
+  alias :item_price_rate_make_item_list :make_item_list
+  def make_item_list
+    item_price_rate_make_item_list
+      sio = Smomo::ItemPriceRate::OPTIONAL
+      @data.reject!{|item|
+        i = item.id
+        item.is_a? RPG::Item && sio[:lfcalendar][i] &&
+        sio[:lfcalendar][i] > sio[:limitForCalendar][i]
+      }
   end
 end
 #==============================================================================
