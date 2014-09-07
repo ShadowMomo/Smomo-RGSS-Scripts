@@ -24,6 +24,7 @@
 #       【:need_change】没有任何实用意义，不常用，可以获取需要刷新的标志
 #       【:period】当前周期经过的时间（如：1366）
 #       【:prd】当前周期的序号，对应在周期名字（如:3）
+#       【:pname】当前周期的名字，与prd是对应的（如:周三）
 #   例：【Smomo.calendar(:zone)】获取时段名
 #------------------------------------------------------------------------------
 # * 版本：
@@ -96,7 +97,7 @@ module Smomo::Calendar
    # 有的单位允许以0为值 比如 3:00 有的不行 比如 3月1日
     # 默认不允许0值 如果需要允许 请将“以零起始”填为【true】
   
-  Start = [19, 14, 31, 7, 2014]
+  Start = [19, 14, 7, 9, 2014]
   # 设置游戏起始时间 与上面的单位从上到下依次对应
   
   PeriodName = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
@@ -117,9 +118,9 @@ module Smomo::Calendar
     [120, Tone.new( -75,-100,   0,  75), "黎明"], # 240...360
     [300, Tone.new(   0,   0,   0,   0), "上午"], # 360...660
     [240, Tone.new(  50,  50,  10, -30), "中午"], # 660...900
-    [180, Tone.new(   0,   0,   0,   0), "下午"], # 900...1080
-    [180, Tone.new(  34, -34, -68, 170), "黄昏"], # 1080...1260
-    [180, Tone.new( -75,-100,   0,  75), "夜晚"], # 1260...1440 则1440为周期长度
+    [120, Tone.new(   0,   0,   0,   0), "下午"], # 900...1020
+    [120, Tone.new(  34, -34, -68, 170), "黄昏"], # 1020...1140
+    [300, Tone.new( -75,-100,   0,  75), "夜晚"], # 1140...1440 则1440为周期长度
   ]
   # 设置时段周期内各时段的长度、色调及名称
    # 时段长度以计时变量的单位为单位
@@ -252,7 +253,7 @@ class Window_MoMapCalendar < Window_Base
     Smomo::Calendar.ensure_time_legal
     Smomo::Calendar.check_period_and_zone
     contents.clear
-    contents.gradient_fill_rect(0, 0, @sprite.width, @sprite.width,
+    contents.gradient_fill_rect(0, 0, @sprite.width, @sprite.height,
     Color.new(30, 30, 30), Color.new(0, 0, 0, 0))
     format = Smomo.deep_clone(Format[:map])
     format.each_with_index do |t, l|
@@ -297,7 +298,11 @@ module Smomo::Calendar
     attr_accessor :period
     define_method(:data){[@zone, @tone, @need_change, @period, @prd]}
     define_method(:data=){|d| @zone, @tone, @need_change, @period, @prd = d}
-    define_method(:function){|type| type == :all ? data : eval(%!@#{type}!)}
+    define_method(:function){|type| type == :all ? data : eval(type.to_s)}
+    # 获知周期名
+    def pname
+      PeriodName[@prd]
+    end
     # 初始化
     def ini
       @ticking = true
