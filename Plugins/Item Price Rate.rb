@@ -108,18 +108,15 @@ class Window_ShopBuy
       item_price_rate_price(item)
     end
   end
-  #--------------------------------------------------------------------------
-  # * Create Item List
-  #--------------------------------------------------------------------------
   alias :item_price_rate_make_item_list :make_item_list
   def make_item_list
     item_price_rate_make_item_list
-      sio = Smomo::ItemPriceRate::OPTIONAL
-      @data.reject!{|item|
-        i = item.id
-        item.is_a? RPG::Item && sio[:lfcalendar][i] &&
-        sio[:lfcalendar][i] > sio[:limitForCalendar][i]
-      }
+    sio = Smomo::ItemPriceRate::OPTIONAL
+    @data.reject!{|item|
+      i = item.id
+      item.is_a?(RPG::Item) && sio[:lfcalendar][i] &&
+      sio[:lfcalendar][i] > sio[:limitForCalendar][i]
+    }
   end
 end
 #==============================================================================
@@ -138,6 +135,24 @@ class Scene_Shop
       item_price_rate_selling_price
     end * (@goods.none?{|g| g[1] == @item.id} ?
     Smomo::ItemPriceRate::OPTIONAL[:profiteer] : 1)).round
+  end
+  alias :item_price_rate_do_buy :do_buy
+  def do_buy(number)
+    item_price_rate_do_buy
+    sio = Smomo::ItemPriceRate::OPTIONAL
+    if @item.is_a?(RPG::Item) && sio[:lfcalendar][@item.id]
+      sio[:lfcalendar][@item.id] += numbrt
+    end
+  end
+  alias :item_price_rate_max_buy :max_buy
+  def max_buy
+    sio = Smomo::ItemPriceRate::OPTIONAL
+    if @item.is_a?(RPG::Item) && sio[:lfcalendar][@item.id]
+      new_max = sio[:limitForCalendar][@item.id] - sio[:lfcalendar][@item.id]
+      [item_price_rate_max_buy, new_max].min
+    else
+      item_price_rate_max_buy
+    end
   end
 end
 
