@@ -129,7 +129,10 @@ class Scene_Map
     end
   end
   _def_ :update_all_windows do |*args, &block|
-    @mo_var_windows.each {|w| w.update}
+    @mo_var_windows.each &:update
+  end
+  _def_ :dispose_all_windows do |*args, &block|
+    @mo_var_windows.each &:dispose
   end
   _def_ :call_menu, :b do |*args, &block|
     @mo_var_windows.each {|w| w.visible = false}
