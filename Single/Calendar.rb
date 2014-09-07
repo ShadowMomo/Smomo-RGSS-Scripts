@@ -26,8 +26,13 @@
 #       【:prd】当前周期的序号，对应在周期名字（如:3）
 #       【:pname】当前周期的名字，与prd是对应的（如:周三）
 #   例：【Smomo.calendar(:zone)】获取时段名
+#  对于插件脚本：
+#   可以使用【Smomo::Calendar.routine.push(某方法)】来向列表中添加新方法
+#   列表中的方法会在一个时段周期结束时被调用
+#   有关时段周期，请参阅107行及以下
 #------------------------------------------------------------------------------
 # * 版本：
+#   V 3.2 2014.09.07 添加了公共接口routine
 #   V 3.1 2014.09.07 优化了室内地图的标记方式 修正了暂停计时时色调的转换问题
 #   V 3.0 2014.07.31 修正了2.7以为成功实际上未修正成功的问题 并做了一些其他调整
 #   V 2.9 2014.07.28 修正了Map不能为:none从2.3版延续过来的傻逼错误
@@ -97,7 +102,7 @@ module Smomo::Calendar
    # 有的单位允许以0为值 比如 3:00 有的不行 比如 3月1日
     # 默认不允许0值 如果需要允许 请将“以零起始”填为【true】
   
-  Start = [19, 14, 7, 9, 2014]
+  Start = [13, 17, 7, 9, 2014]
   # 设置游戏起始时间 与上面的单位从上到下依次对应
   
   PeriodName = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
@@ -295,7 +300,7 @@ module Smomo::Calendar
   _.each_with_index{|z, i| Zone[i][0] = (i == 0 ? 0 : _[i - 1][0])...z[0]}
   class << self
     attr_reader :zone, :prd, :ticking
-    attr_accessor :period
+    attr_accessor :period, :routine
     define_method(:data){[@zone, @tone, @need_change, @period, @prd]}
     define_method(:data=){|d| @zone, @tone, @need_change, @period, @prd = d}
     define_method(:function){|type| type == :all ? data : eval(type.to_s)}
@@ -356,7 +361,7 @@ module Smomo::Calendar
     end
     # 确保时段在范围内
     def ensure_period_legal
-      @prd += (@period = 0) + 1 if @period >= PeriodSize
+      [@routine.each(&:call), @prd += 1, @period = 0] if @period >= PeriodSize
       @prd = 0 if @prd >= PeriodName.size
     end
     # 检查周期别名和时段
@@ -380,6 +385,7 @@ module Smomo::Calendar
       $game_map.instance_exec{ @map }.note =~ IndoorMap
     end
   end
+  Smomo::Calendar.routine = Array.new
 end
 #==============================================================================
 # ** Smomo.calendar(*a, &b)
