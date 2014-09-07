@@ -105,7 +105,7 @@ class Window_ShopBuy
     if $game_switches[Smomo::ItemPriceRate::Using]
       @price[item] * (100 + $game_variables[Smomo::ItemPriceRate::Buying]) / 100
     else
-      item_price_rate_price(item)
+      item_price_rate_price item
     end
   end
   alias :item_price_rate_make_item_list :make_item_list
@@ -138,7 +138,7 @@ class Scene_Shop
   end
   alias :item_price_rate_do_buy :do_buy
   def do_buy(number)
-    item_price_rate_do_buy
+    item_price_rate_do_buy number
     sio = Smomo::ItemPriceRate::OPTIONAL
     if @item.is_a?(RPG::Item) && sio[:lfcalendar][@item.id]
       sio[:lfcalendar][@item.id] += numbrt
