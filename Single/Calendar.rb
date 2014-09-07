@@ -27,6 +27,7 @@
 #   例：【Smomo.calendar(:zone)】获取时段名
 #------------------------------------------------------------------------------
 # * 版本：
+#   V 3.1 2014.09.07 优化了室内地图的标记方式 修正了暂停计时时色调的转换问题
 #   V 3.0 2014.07.31 修正了2.7以为成功实际上未修正成功的问题 并做了一些其他调整
 #   V 2.9 2014.07.28 修正了Map不能为:none从2.3版延续过来的傻逼错误
 #   V 2.8 2014.07.26 对2.7的小修正 并修改了自定义提示语
@@ -127,9 +128,12 @@ module Smomo::Calendar
    # 【所以，就算不需要使用时段功能，也一定要保证时段长度之和是一个合适的值！】
   # 当一次时段轮回完毕 就会推移到下一个周期（如：周三-->周四）
   
-  IndoorMap = [2, 37]
-  # 室内地图的ID
-   # 处于室内地图时，不会受到时段色调的影响
+  IndoorMap = /<IndoorMap>/i
+  # 用于匹配室内地图备注的正则式
+   # 默认为/<IndoorMap>/i
+   # 在地图的备注上写【<IndoorMap>】就可以标记其为室内地图
+   # 不区分大小写
+  # 处于室内地图时，不会受到时段色调的影响
   
   Format = {
     # 菜单用的格式
@@ -356,14 +360,19 @@ module Smomo::Calendar
       @tone == tone ? nil : [@tone = tone, @need_change = true]
     end
     # 改变画面色调
-    def change_tone(pt = false)
-      return unless @need_change || pt
+    def change_tone(im = false, reset = false)
+      return unless @need_change || im
       @need_change = false
-      if IndoorMap.include?($game_map.map_id)
+      if indoor? || !$game_switches[Use] && reset
         $game_map.screen.start_tone_change(Tone.new(0, 0, 0, 0), 0)
       else
-        $game_map.screen.start_tone_change(@tone, pt ? 0 : 60)
+        return unless $game_switches[Use]
+        $game_map.screen.start_tone_change(@tone, im ? 0 : 60)
       end
+    end
+    # 是否是室内地图
+    def indoor?
+      $game_map.instance_exec{ @map }.note =~ IndoorMap
     end
   end
 end
@@ -378,7 +387,7 @@ end
 #==============================================================================
 class Game_Switches
   _def_ :on_change do
-    Smomo::Calendar.change_tone
+    Smomo::Calendar.change_tone true, true
   end
 end
 #==============================================================================
