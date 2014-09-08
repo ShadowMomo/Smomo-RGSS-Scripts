@@ -171,31 +171,6 @@ end
 # 如果你懂脚本，可以在下面调整时间窗口的显示方式
 #==============================================================================
 
-#==============================================================================
-# ** Scene_Menu 建立菜单场景的窗口
-#==============================================================================
-class Scene_Menu
-  _def_ :start do |*args|
-    return unless Smomo::Calendar::Menu
-    # 在下面添加自定义内容
-    @mocalendar_window = Window_MoMenuCalendar.new(@gold_window)
-  end
-end
-#==============================================================================
-# ** Scene_Map 建立地图场景的窗口
-#==============================================================================
-class Scene_Map
-  _def_ :create_all_windows do |*args|
-    return if Smomo::Calendar::Map == :none
-    # 在下面添加自定义内容
-    @mocalendar_window = Window_MoMapCalendar.new 
-  end
-  _def_ :call_menu do |*args|
-    return if Smomo::Calendar::Map == :none
-    # 在下面添加自定义内容
-    @mocalendar_window.contents.clear
-  end
-end
 #============================================================================
 # ** Window_MoMenuCalendar 菜单画面中，显示当前游戏内部虚拟日历的窗口
 #============================================================================
@@ -254,6 +229,11 @@ class Window_MoMapCalendar < Window_Base
     end
   end
   
+  def dispose
+    @sprite.bitmap.dispose if @sprite.bitmap
+    @sprite.dispose
+  end
+  
   def refresh
     Smomo::Calendar.ensure_time_legal
     Smomo::Calendar.check_period_and_zone
@@ -281,6 +261,26 @@ class Window_MoMapCalendar < Window_Base
   end
   def windowskin
     Cache.system("Window")
+  end
+end
+#==============================================================================
+# ** Scene_Menu 建立菜单场景的窗口
+#==============================================================================
+class Scene_Menu
+  _def_ :start do |*args|
+    return unless Smomo::Calendar::Menu
+    # 在下面添加自定义内容
+    @mocalendar_window = Window_MoMenuCalendar.new(@gold_window)
+  end
+end
+#==============================================================================
+# ** Scene_Map 建立地图场景的窗口
+#==============================================================================
+class Scene_Map
+  _def_ :create_all_windows do |*args|
+    return if Smomo::Calendar::Map == :none
+    # 在下面添加自定义内容
+    @mocalendar_window = Window_MoMapCalendar.new 
   end
 end
 #=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+#
