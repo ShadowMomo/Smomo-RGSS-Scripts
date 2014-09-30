@@ -28,10 +28,14 @@
 #   例：【Smomo.calendar(:zone)】获取时段名
 #  对于插件脚本：
 #   可以使用【Smomo::Calendar.routine.push(某方法)】来向列表中添加新方法
+#   例：【Smomo::Calendar.routine.push(lambda{ puts "一天过去了" })】
 #   列表中的方法会在一个时段周期结束时被调用
-#   有关时段周期，请参阅107行及以下
+#   有关时段周期，请参阅112行及以下
+#  更多内容，示例工程，请来发布帖查看：
+#   http://rm.66rpg.com/thread-330684-1-1.html
 #------------------------------------------------------------------------------
 # * 版本：
+#   V 3.3 2014.09.30 解决了时段计时与时间在变量干涉下不同步的问题
 #   V 3.2 2014.09.07 添加了公共接口routine
 #   V 3.1 2014.09.07 优化了室内地图的标记方式 修正了暂停计时时色调的转换问题
 #   V 3.0 2014.07.31 修正了2.7以为成功实际上未修正成功的问题 并做了一些其他调整
@@ -329,6 +333,15 @@ module Smomo::Calendar
       end
       sta.reverse[0] % PeriodSize
     end
+    # 重置周期
+    def reset_period
+      sta = System.each_index.map{|i| $game_variables[Var + i]}.reverse
+      sta.each_with_index do |n, i|
+        next if i == sta.size - 1
+        sta[i + 1] += n * System.reverse[i + 1][1]
+      end
+      @period = sta.reverse[0] % PeriodSize
+    end
     # 计时
     def i_look_into_the_sky_as_time_passes_by
       return unless $game_switches[Use]
@@ -418,6 +431,7 @@ class Game_Variables
         Smomo::Calendar.ensure_period_legal
         Smomo::Calendar.check_period_and_zone
         Smomo::Calendar.change_tone
+        Smomo::Calendar.reset_period
       else
         old.call(variable_id, value)
       end
