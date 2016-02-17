@@ -161,12 +161,12 @@ module Input
   Mouse = {left: 0x01, right: 0x02, middle: 0x04}
   
   LETTERS = {
-    'A' => 0x41, 'B' => 0x42, 'C' => 0x43, 'D' => 0x44, 'E' => 0x45,
-    'F' => 0x46, 'G' => 0x47, 'H' => 0x48, 'I' => 0x49, 'J' => 0x4A,
-    'K' => 0x4B, 'L' => 0x4C, 'M' => 0x4D, 'N' => 0x4E, 'O' => 0x4F,
-    'P' => 0x50, 'Q' => 0x51, 'R' => 0x52, 'S' => 0x53, 'T' => 0x54,
-    'U' => 0x55, 'V' => 0x56, 'W' => 0x57, 'X' => 0x58, 'Y' => 0x59,
-    'Z' => 0x5A
+    ?A => 0x41, ?B => 0x42, ?C => 0x43, ?D => 0x44, ?E => 0x45,
+    ?F => 0x46, ?G => 0x47, ?H => 0x48, ?I => 0x49, ?J => 0x4A,
+    ?K => 0x4B, ?L => 0x4C, ?M => 0x4D, ?N => 0x4E, ?O => 0x4F,
+    ?P => 0x50, ?Q => 0x51, ?R => 0x52, ?S => 0x53, ?T => 0x54,
+    ?U => 0x55, ?V => 0x56, ?W => 0x57, ?X => 0x58, ?Y => 0x59,
+    ?Z => 0x5A
   }
   
   #             0     1     2     3     4     5     6     7     8     9
@@ -370,39 +370,39 @@ class << self
   # * Interpret Strings And Handle The Quest
   #--------------------------------------------------------------------------
   def string_key key, sym
-    if key.bitween? 'A'..'Z'
+    if (?A..?Z).include? key
       method(sym).call LETTERS[key]
-    elsif key.bitween? '0'..'9'
+    elsif (?0..?9).include? key
       method(sym).call(NUMBERS[key.to_i]) || method(sym).call(NUMPAD[key.to_i])
     else
       case key.downcase
-      when '*'; method(sym).call Multiply
-      when '+'; method(sym).call(Add)       || method(sym).call(EQUALS)
-      when '-'; method(sym).call(Subtract)  || method(sym).call(USCORE)
-      when '/'; method(sym).call(Divide)    || method(sym).call(SLASH)
-      when ','; method(sym).call(Separator) || method(sym).call(COMMA)
-      when '.'; method(sym).call(Decimal)   || method(sym).call(PERIOD)
-      when '<'; method(sym).call COMMA
-      when '>'; method(sym).call PERIOD
-      when '?'; method(sym).call SLASH
-      when ';' , ':'; method(sym).call SCOLON
-      when '\'', '"'; method(sym).call QUOTE
-      when '[' , '{'; method(sym).call LBRACE
-      when ']' , '}'; method(sym).call RBRACE
-      when '`' , '~'; method(sym).call TILDE
-      when '\\', '|'; method(sym).call BSLASH
-      when '!'; method(sym).call NUMBERS[1]
-      when '@'; method(sym).call NUMBERS[2]
-      when '#'; method(sym).call NUMBERS[3]
-      when '$'; method(sym).call NUMBERS[4]
-      when '%'; method(sym).call NUMBERS[5]
-      when '^'; method(sym).call NUMBERS[6]
-      when '&'; method(sym).call NUMBERS[7]
-      when '*'; method(sym).call NUMBERS[8]
-      when '('; method(sym).call NUMBERS[9]
-      when ')'; method(sym).call NUMBERS[0]
-      when '_'; method(sym).call USCORE
-      when '='; method(sym).call EQUALS
+      when ?*; method(sym).call Multiply
+      when ?+; method(sym).call(Add)       || method(sym).call(EQUALS)
+      when ?-; method(sym).call(Subtract)  || method(sym).call(USCORE)
+      when ?/; method(sym).call(Divide)    || method(sym).call(SLASH)
+      when ?,; method(sym).call(Separator) || method(sym).call(COMMA)
+      when ?.; method(sym).call(Decimal)   || method(sym).call(PERIOD)
+      when ?<; method(sym).call COMMA
+      when ?>; method(sym).call PERIOD
+      when ??; method(sym).call SLASH
+      when ?!; method(sym).call NUMBERS[1]
+      when ?@; method(sym).call NUMBERS[2]
+      when ?#; method(sym).call NUMBERS[3]
+      when ?$; method(sym).call NUMBERS[4]
+      when ?%; method(sym).call NUMBERS[5]
+      when ?^; method(sym).call NUMBERS[6]
+      when ?&; method(sym).call NUMBERS[7]
+      when ?*; method(sym).call NUMBERS[8]
+      when ?(; method(sym).call NUMBERS[9]
+      when ?); method(sym).call NUMBERS[0]
+      when ?_; method(sym).call USCORE
+      when ?=; method(sym).call EQUALS
+      when ?;, ?:; method(sym).call SCOLON
+      when ?', ?"; method(sym).call QUOTE
+      when ?[, ?{; method(sym).call LBRACE
+      when ?], ?}; method(sym).call RBRACE
+      when ?`, ?~; method(sym).call TILDE
+      when ?\\, ?|; method(sym).call BSLASH
       when 'shift'      ; method(sym).call SHIFT
       when 'lshift'     ; method(sym).call LeftSHIFT
       when 'rshift'     ; method(sym).call RightSHIFT
@@ -437,7 +437,7 @@ class << self
       when 'lwin'       ; method(sym).call LeftWin
       when 'rwin'       ; method(sym).call RightWin
       when 'win'; method(sym).call(LeftWin) || method(sym).call(RightWin)
-      else; key == key.slice(0, 1) ? false : string_key(key.slice(0, 1), sym)
+      else; key != key[0] && string_key(key[0], sym)
       end
     end
   end
@@ -457,45 +457,45 @@ class << self
   # * Type of the key typed
   #--------------------------------------------------------------------------
   def key_type
-    return " " if repeat? SPACEBAR
+    return ?\s if repeat? SPACEBAR
     LETTERS.each{|l, c| return upcase? ? l.upcase : l.downcase if repeat? c}
     NUMPAD.each_with_index{|n, i| return i.to_s if repeat? n}
     if press? SHIFT
       NUMBERS.each_with_index do |n, i|
         next unless repeat? n
         case i
-        when 1; return "!"
-        when 2; return "@"
-        when 3; return "#"
-        when 4; return "$"
-        when 5; return "%"
-        when 6; return "^"
-        when 7; return "&"
-        when 8; return "*"
-        when 9; return "("
-        when 0; return ")"
+        when 1; return ?!
+        when 2; return ?@
+        when 3; return ?#
+        when 4; return ?$
+        when 5; return ?%
+        when 6; return ?^
+        when 7; return ?&
+        when 8; return ?*
+        when 9; return ?(
+        when 0; return ?)
         end
       end
     else
       NUMBERS.each_with_index{|n, i| return i.to_s if repeat? n}
     end
-    return "*" if press? Multiply
-    return "+" if press? Add
-    return "-" if press? Subtract
-    return "/" if press? Divide
-    return "," if press? Separator
-    return "." if press? Decimal
-    return press?(SHIFT) ? ":" : ";"  if press? SCOLON
-    return press?(SHIFT) ? "+" : "="  if press? EQUALS
-    return press?(SHIFT) ? "<" : ","  if press? COMMA
-    return press?(SHIFT) ? "_" : "-"  if press? USCORE
-    return press?(SHIFT) ? ">" : "."  if press? PERIOD
-    return press?(SHIFT) ? "?" : "/"  if press? SLASH
-    return press?(SHIFT) ? "~" : "`"  if press? TILDE
-    return press?(SHIFT) ? "{" : "["  if press? LBRACE
-    return press?(SHIFT) ? "|" : "\\" if press? BSLASH
-    return press?(SHIFT) ? "}" : "]"  if press? RBRACE
-    return press?(SHIFT) ? '"' : "'"  if press? QUOTE
+    return ?* if press? Multiply
+    return ?+ if press? Add
+    return ?- if press? Subtract
+    return ?/ if press? Divide
+    return ?, if press? Separator
+    return ?. if press? Decimal
+    return press?(SHIFT) ? ?: : ?;  if press? SCOLON
+    return press?(SHIFT) ? ?+ : ?=  if press? EQUALS
+    return press?(SHIFT) ? ?< : ?,  if press? COMMA
+    return press?(SHIFT) ? ?_ : ?-  if press? USCORE
+    return press?(SHIFT) ? ?> : ?.  if press? PERIOD
+    return press?(SHIFT) ? ?? : ?/  if press? SLASH
+    return press?(SHIFT) ? ?~ : ?`  if press? TILDE
+    return press?(SHIFT) ? ?{ : ?[  if press? LBRACE
+    return press?(SHIFT) ? ?| : ?\\ if press? BSLASH
+    return press?(SHIFT) ? ?} : ?]  if press? RBRACE
+    return press?(SHIFT) ? ?" : ?'  if press? QUOTE
     return ""
   end
   #--------------------------------------------------------------------------
