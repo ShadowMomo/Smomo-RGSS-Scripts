@@ -34,7 +34,8 @@
 #  更多内容，示例工程，请来发布帖查看：
 #   http://rm.66rpg.com/thread-330684-1-1.html
 #------------------------------------------------------------------------------
-# * 版本：
+# * 版本
+#   V 3.4 2016.08.01 增加了一个人性化的报错提示: 未设置 Speed 对应变量
 #   V 3.3 2014.09.30 解决了时段计时与时间在变量干涉下不同步的问题
 #   V 3.2 2014.09.07 添加了公共接口routine
 #   V 3.1 2014.09.07 优化了室内地图的标记方式 修正了暂停计时时色调的转换问题
@@ -106,7 +107,7 @@ module Smomo::Calendar
    # 有的单位允许以0为值 比如 3:00 有的不行 比如 3月1日
     # 默认不允许0值 如果需要允许 请将“以零起始”填为【true】
   
-  Start = [13, 17, 7, 9, 2014]
+  Start = [23, 9, 1, 8, 2016]
   # 设置游戏起始时间 与上面的单位从上到下依次对应
   
   PeriodName = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
@@ -216,7 +217,7 @@ class Window_MoMapCalendar < Window_Base
     height = Format[:map].size * 30 + 10
     @sprite = Sprite.new
     @sprite.y = Smomo::Calendar::Map == :top ? 0 : Graphics.height - height
-    @sprite.bitmap = Bitmap.new(Graphics.width, height)
+    @sprite.bitmap = Bitmap.new Graphics.width, height
     @use = true
     update
     refresh
@@ -228,6 +229,9 @@ class Window_MoMapCalendar < Window_Base
       @sprite.x = @use ? 0 : Graphics.width
       refresh
     else
+      if @use && $game_variables[Speed].zero?
+        raise "请先将 Speed 对应变量设为非零值!"
+      end
       refresh if @use && Graphics.frame_count % $game_variables[Speed] == 0 ||
       $game_map.need_refresh
     end
@@ -264,7 +268,7 @@ class Window_MoMapCalendar < Window_Base
     @sprite.bitmap
   end
   def windowskin
-    Cache.system("Window")
+    Cache.system "Window"
   end
 end
 #==============================================================================
@@ -318,7 +322,7 @@ module Smomo::Calendar
       System.each_index{|i| $game_variables[Var + i] = Start[i]}
       @ticking = false
       @zone = ""
-      @tone = Tone.new(0, 0, 0, 0)
+      @tone = Tone.new 0, 0, 0, 0
       @need_change = false
       @period = init_period
       @prd = Start_PeriodName
@@ -346,8 +350,10 @@ module Smomo::Calendar
     def i_look_into_the_sky_as_time_passes_by
       return unless $game_switches[Use]
       return if $game_message.visible
+      if $game_variables[Speed].zero?
+        raise "请先将 Speed 对应变量设为非零值!"
+      end
       return unless Graphics.frame_count % $game_variables[Speed] == 0
-      # 如果在这里报错 一定是你没有设置Speed所对应的变量的值
       @ticking = true
       $game_variables[Var] += 1
       @period += 1
@@ -383,14 +389,14 @@ module Smomo::Calendar
       @tone == tone ? nil : [@tone = tone, @need_change = true]
     end
     # 改变画面色调
-    def change_tone(im = false, reset = false)
+    def change_tone im = false, reset = false
       return unless @need_change || im
       @need_change = false
       if indoor? || !$game_switches[Use] && reset
-        $game_map.screen.start_tone_change(Tone.new(0, 0, 0, 0), 0)
+        $game_map.screen.start_tone_change Tone.new(0, 0, 0, 0), 0
       else
         return unless $game_switches[Use]
-        $game_map.screen.start_tone_change(@tone, im ? 0 : 60)
+        $game_map.screen.start_tone_change @tone, im ? 0 : 60
       end
     end
     # 是否是室内地图
@@ -403,8 +409,8 @@ end
 #==============================================================================
 # ** Smomo.calendar(*a, &b)
 #==============================================================================
-def Smomo.calendar(*a, &b)
-  Smomo::Calendar.function(*a, &b)
+def Smomo.calendar *a, &b
+  Smomo::Calendar.function *a, &b
 end
 #==============================================================================
 # ** Game_Switches
@@ -420,20 +426,20 @@ end
 class Game_Variables
   _def_ :[]=, :c do |old, variable_id, value|
     if Smomo::Calendar.ticking
-      old.call(variable_id, value)
+      old.call variable_id, value
     else
       min = Smomo::Calendar::Var
       max = min + Smomo::Calendar::System.size - 1
-      if variable_id.between?(min, max)
+      if variable_id.between? min, max
         Smomo::Calendar.period += value - @data[variable_id]
-        old.call(variable_id, value)
+        old.call variable_id, value
         Smomo::Calendar.ensure_time_legal
         Smomo::Calendar.ensure_period_legal
         Smomo::Calendar.check_period_and_zone
         Smomo::Calendar.change_tone
         Smomo::Calendar.reset_period
       else
-        old.call(variable_id, value)
+        old.call variable_id, value
       end
     end
   end
