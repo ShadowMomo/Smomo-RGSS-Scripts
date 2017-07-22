@@ -564,9 +564,9 @@ class Window_Message
 
     def anime_limit_reached?
       stop_var = get_game_variable Anime[:stop_var], 0
-      repeat_var = get_game_variable Anime[:repeat_var], 1
-      repeat_var =  repeat_var - 1
+      repeat_var = get_game_variable Anime[:repeat_var], 0
       repeat_var = Float::INFINITY if repeat_var.zero?
+      repeat_var = repeat_var - 1
       @anime_repeat_count == repeat_var && @frame >=  stop_var ||
       @anime_repeat_count  > repeat_var
     end
