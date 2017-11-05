@@ -2,6 +2,7 @@
 # Yet Another Window Message with Portrait
 # Esphas
 #
+# v2.0.1 2017.10.18 fixed bugs displaying wrong dialog skin
 # v2.0.0 2017.07.21 release
 #
 # https://github.com/ShadowMomo/Smomo-RGSS-Scripts/blob/master/Single/YAWMP.rb
@@ -564,9 +565,9 @@ class Window_Message
 
     def anime_limit_reached?
       stop_var = get_game_variable Anime[:stop_var], 0
-      repeat_var = get_game_variable Anime[:repeat_var], 0
+      repeat_var = get_game_variable Anime[:repeat_var], 1
+      repeat_var =  repeat_var - 1
       repeat_var = Float::INFINITY if repeat_var.zero?
-      repeat_var = repeat_var - 1
       @anime_repeat_count == repeat_var && @frame >=  stop_var ||
       @anime_repeat_count  > repeat_var
     end
@@ -764,6 +765,7 @@ class Window_Message
 
   def update_background
     @background = $game_message.background
+    @dialogbox.load_skin
     update_dialog_validation
   end
 
@@ -918,6 +920,7 @@ class Window_Message
 
   def open_and_wait
     @dialogbox.load_skin
+    update_dialog_validation
     if @first_time_window_open
       @dialogbox.state = :fading_in
       @first_time_window_open = false
@@ -989,6 +992,7 @@ class Window_Message
   def new_page text, pos
     contents.clear
     @dialogbox.load_skin
+    update_dialog_validation
     refresh_portraits
     Fiber.yield while transitioning?
     reset_font_settings
