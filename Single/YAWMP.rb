@@ -2,6 +2,7 @@
 # Yet Another Window Message with Portrait
 # Esphas
 #
+# v2.1.0 2017.12.31 new features: shake dialog, play SE
 # v2.0.1 2017.10.18 fixed bugs displaying wrong dialog skin
 # v2.0.0 2017.07.21 release
 #
@@ -87,10 +88,10 @@ class Window_Message
       face: {
         'Agn' => 2,
         'def' => 7,
-        'ghi' => 5,
+        'Gal' => 5,
       },
       name: {
-        'Soldier' => 7,
+        '路人' => 3,
       }
     },
     indent: 2
@@ -174,14 +175,20 @@ class Window_Message
   #  character_wait_var: 表示两个字符之间等待时间的变量
   #    # 超过 15 按 15 处理
   #  escape: 控制符
-  #    shake: 抖动
-  #    switch: 切换立绘
+  #    shake: 抖动立绘
+  #    switch: 切换立绘，参数为立绘图编号或全称，如【\S[6]】【\S[AgnesC_L0]】
+  #    dialog_shake: 抖动对话框
+  #    se: 播放音效(SE)，参数为音效文件名，不带拓展名，如【\X[Absorb1]】
+  #      # 也可以带上一个额外参数表示音量，如【\X[Absorb1,100]】
+  #      # 还可再带一个额外参数表示音调，如【\X[Absorb1,100,150]】
   #    # 控制符必须是单个字符，不区分大小写
   Text = {
     character_wait_var: 87,
     escape: {
       shake: 'D',
-      switch: 'S'
+      switch: 'S',
+      dialog_shake: 'Z',
+      se: 'X'
     }
   }
 
@@ -218,6 +225,7 @@ class Window_Message
       @state = nil
       @update_frame_count = 0
       load_skin
+      clear_shake
     end
 
     def load_skin
@@ -256,6 +264,11 @@ class Window_Message
         @update_frame_count += 1
         do_fading_out
         state_end = @update_frame_count >= Fading[:dialogbox_out]
+      else
+        if shaking?
+          update_shake
+          @sprite.ox = @shake
+        end
       end
       if state_end
         @update_frame_count = 0
@@ -278,6 +291,36 @@ class Window_Message
       return if @sprite.opacity == 0
       progress = @update_frame_count.to_f / Fading[:dialogbox_out]
       @sprite.opacity = 255 - 255 * progress
+    end
+
+    def clear_shake
+      @shake_power = 0
+      @shake_speed = 0
+      @shake_duration = 0
+      @shake_direction = 1
+      @shake = 0
+    end
+
+    def start_shake power = 1, speed = 10, duration = 15
+      @shake_power = power
+      @shake_speed = speed
+      @shake_duration = duration
+    end
+
+    def update_shake
+      delta = (@shake_power * @shake_speed * @shake_direction) / 10.0
+      if @shake_duration <= 1 && @shake * (@shake + delta) < 0
+        @shake = 0
+      else
+        @shake += delta
+      end
+      @shake_direction = -1 if @shake > @shake_power * 2
+      @shake_direction = 1 if @shake < - @shake_power * 2
+      @shake_duration -= 1
+    end
+
+    def shaking?
+      @shake_duration > 0 || @shake != 0
     end
 
     def dispose
@@ -1037,6 +1080,16 @@ class Window_Message
           msgbox ErrorMessage[:invalid_switch]
         end
       end
+    when Text[:escape][:dialog_shake].upcase
+      @dialogbox.start_shake
+    when Text[:escape][:se].upcase
+      param = obtain_escape_param_string text
+      params = param.split ','
+      params[0] = 'Audio/SE/' + params[0]
+      params[1] = (params[1] ||  80).to_i
+      params[2] = (params[2] || 100).to_i
+      Audio.se_stop
+      Audio.se_play *params
     else
       yawmp_process_escape_character code, text, pos
     end
