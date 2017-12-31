@@ -2,6 +2,7 @@
 # Yet Another Window Message with Portrait
 # Esphas
 #
+# v2.2.0 2017.12.31 new feature: shakes now supports up to 4 parameters
 # v2.1.0 2017.12.31 new features: shake dialog, play SE
 # v2.0.1 2017.10.18 fixed bugs displaying wrong dialog skin
 # v2.0.0 2017.07.21 release
@@ -176,8 +177,19 @@ class Window_Message
   #    # 超过 15 按 15 处理
   #  escape: 控制符
   #    shake: 抖动立绘
-  #    switch: 切换立绘，参数为立绘图编号或全称，如【\S[6]】【\S[AgnesC_L0]】
+  #      # 可以带个参数表示抖动方向，默认为 H 表示横向，V 表示纵向
+  #        # 如【\D[V]】
+  #        # 若希望纵横同时进行，则使用数字表示【横向：纵向】的抖动幅度比例
+  #        # 如【\D[0.5]】
+  #      # 可以再带一个参数表示抖动幅度，默认为 1
+  #        # 如【\D[V,2]】
+  #      # 还可以带一个参数表示抖动抖动速度，默认为 10
+  #        # 如【\D[V,2,20]】
+  #      # 还可以再带一个参数表示抖动持续时间，默认为 15
+  #        # 如【\D[V,2,20,60]】
   #    dialog_shake: 抖动对话框
+  #      # 参数配置同 shake
+  #    switch: 切换立绘，参数为立绘图编号或全称，如【\S[6]】【\S[AgnesC_L0]】
   #    se: 播放音效(SE)，参数为音效文件名，不带拓展名，如【\X[Absorb1]】
   #      # 也可以带上一个额外参数表示音量，如【\X[Absorb1,100]】
   #      # 还可再带一个额外参数表示音调，如【\X[Absorb1,100,150]】
@@ -186,8 +198,8 @@ class Window_Message
     character_wait_var: 87,
     escape: {
       shake: 'D',
+      shake_dialog: 'Z',
       switch: 'S',
-      dialog_shake: 'Z',
       se: 'X'
     }
   }
@@ -210,8 +222,62 @@ class Window_Message
   }
 
   'Edit Anything Below At Your Own Risk'
+  
+  module SpriteContainer
+    
+    def clear_shake
+      @shake_align = 0
+      @shake_power = 0
+      @shake_speed = 0
+      @shake_duration = 0
+      @shake_direction = 1
+      @shake = 0
+    end
+
+    def start_shake param
+      params = param.split ','
+      @shake_align = (params[0] ||  'H').strip
+      if @shake_align =~ /^[HV]$/i
+        @shake_align = @shake_align.upcase.to_sym
+      else
+        @shake_align = @shake_align.to_i
+      end
+      @shake_power    = (params[1] ||  1).to_i
+      @shake_speed    = (params[2] || 10).to_i
+      @shake_duration = (params[3] || 15).to_i
+    end
+
+    def update_shake
+      delta = (@shake_power * @shake_speed * @shake_direction) / 10.0
+      if @shake_duration <= 1 && @shake * (@shake + delta) < 0
+        @shake = 0
+      else
+        @shake += delta
+      end
+      @shake_direction = -1 if @shake > @shake_power * 2
+      @shake_direction = 1 if @shake < - @shake_power * 2
+      @shake_duration -= 1
+    end
+
+    def shaking?
+      @shake_duration > 0 || @shake != 0
+    end
+    
+    def apply_shake sprite
+      if @shake_align == :H
+        sprite.ox = @shake
+      elsif @shake_align == :V
+        sprite.oy = @shake
+      else
+        sprite.ox = @shake*@shake_align
+        sprite.oy = @shake
+      end
+    end
+  end
 
   class DialogBox
+    
+    include SpriteContainer
 
     attr_accessor :state
 
@@ -267,7 +333,7 @@ class Window_Message
       else
         if shaking?
           update_shake
-          @sprite.ox = @shake
+          apply_shake @sprite
         end
       end
       if state_end
@@ -293,36 +359,6 @@ class Window_Message
       @sprite.opacity = 255 - 255 * progress
     end
 
-    def clear_shake
-      @shake_power = 0
-      @shake_speed = 0
-      @shake_duration = 0
-      @shake_direction = 1
-      @shake = 0
-    end
-
-    def start_shake power = 1, speed = 10, duration = 15
-      @shake_power = power
-      @shake_speed = speed
-      @shake_duration = duration
-    end
-
-    def update_shake
-      delta = (@shake_power * @shake_speed * @shake_direction) / 10.0
-      if @shake_duration <= 1 && @shake * (@shake + delta) < 0
-        @shake = 0
-      else
-        @shake += delta
-      end
-      @shake_direction = -1 if @shake > @shake_power * 2
-      @shake_direction = 1 if @shake < - @shake_power * 2
-      @shake_duration -= 1
-    end
-
-    def shaking?
-      @shake_duration > 0 || @shake != 0
-    end
-
     def dispose
       @sprite.dispose
     end
@@ -333,6 +369,8 @@ class Window_Message
   end
 
   class PortraitFrame
+    
+    include SpriteContainer
 
     attr_reader :face_name
     attr_reader :face_index
@@ -471,7 +509,7 @@ class Window_Message
       else
         if shaking?
           update_shake
-          @sprite.ox = @shake
+          apply_shake @sprite
         else
           update_anime unless anime_disabled?
         end
@@ -634,36 +672,6 @@ class Window_Message
       return true
     rescue Errno::ENOENT
       return false
-    end
-
-    def clear_shake
-      @shake_power = 0
-      @shake_speed = 0
-      @shake_duration = 0
-      @shake_direction = 1
-      @shake = 0
-    end
-
-    def start_shake power = 1, speed = 10, duration = 15
-      @shake_power = power
-      @shake_speed = speed
-      @shake_duration = duration
-    end
-
-    def update_shake
-      delta = (@shake_power * @shake_speed * @shake_direction) / 10.0
-      if @shake_duration <= 1 && @shake * (@shake + delta) < 0
-        @shake = 0
-      else
-        @shake += delta
-      end
-      @shake_direction = -1 if @shake > @shake_power * 2
-      @shake_direction = 1 if @shake < - @shake_power * 2
-      @shake_duration -= 1
-    end
-
-    def shaking?
-      @shake_duration > 0 || @shake != 0
     end
 
     def dispose
@@ -1063,7 +1071,11 @@ class Window_Message
   def process_escape_character code, text, pos
     case code.upcase
     when Text[:escape][:shake].upcase
-      @portraits[@active_portraits.first].start_shake
+      param = obtain_escape_param_string text
+      @portraits[@active_portraits.first].start_shake param
+    when Text[:escape][:shake_dialog].upcase
+      param = obtain_escape_param_string text
+      @dialogbox.start_shake param
     when Text[:escape][:switch].upcase
       param = obtain_escape_param_string text
       if param =~ /^\d+$/
@@ -1080,8 +1092,6 @@ class Window_Message
           msgbox ErrorMessage[:invalid_switch]
         end
       end
-    when Text[:escape][:dialog_shake].upcase
-      @dialogbox.start_shake
     when Text[:escape][:se].upcase
       param = obtain_escape_param_string text
       params = param.split ','
@@ -1096,7 +1106,7 @@ class Window_Message
   end
 
   def obtain_escape_param_string text
-    text.slice!(/^\[[^\[\]]+\]/)[/[^\[\]]+/]
+    text.slice!(/^\[[^\[\]]+\]/)[/[^\[\]]+/] rescue ''
   end
 
   def adjust_choice?
