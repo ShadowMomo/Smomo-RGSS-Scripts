@@ -2,6 +2,13 @@
 # Yet Another Window Message with Portrait
 # Esphas
 #
+# v4.1.1 2018.04.01 new feature: when missing portrait, use face image instead
+# v4.1.0 2018.04.01 happy fool's day! I decide to change the version number to
+#                   v4.1.0, but actually not much changes are made:
+#                     a fix to a vallana bug;
+#                     portrait offset;
+#                     shake control improvments.
+# v3.0.0 2017.12.31 alright, shake overhaul, compatible with v2.0
 # v2.2.0 2017.12.31 new feature: shakes now supports up to 4 parameters
 # v2.1.0 2017.12.31 new features: shake dialog, play SE
 # v2.0.1 2017.10.18 fixed bugs displaying wrong dialog skin
@@ -31,6 +38,21 @@ module Cache
     filename = "#{filename}_#{frame}" if frame > 0
     filename
   end
+end
+
+class Window_ChoiceList
+  ##
+  # 用于修复一个原生 bug：显示选项时使用图标造成的长度不当
+  # 如果你已经使用了其他修复手段，那么请将下方标注的 true 改为 false
+  def max_choice_width
+    $game_message.choices.collect do |s|
+      s = convert_escape_characters s
+      height = calc_line_height s
+      pos = {x: 0, y: -Graphics.height, new_x: 0, height: height}
+      process_character(s.slice!(0, 1), s, pos) until s.empty?
+      pos[:x]
+    end.max
+  end if true ## 此处标注
 end
 
 class Window_Message
@@ -139,9 +161,19 @@ class Window_Message
 
   ##
   # Offset
+  #  portrait_x_back: X 方向向后方（立绘在左即左方，在右即右方）的偏移量
+  #  portrait_y_down: Y 方向向下的偏移量
+  #  face_side_left: 无立绘时，脸图在左侧时的侧边距
+  #  face_side_right: 无立绘时，脸图在右侧时的侧边距
+  #  face_bottom:  无立绘时脸图的下边距
   #  text_without_face: 没有立绘时的文本左偏移量
   #  text_with_face: 有立绘时的文本左偏移量
   Offset = {
+    portrait_x_back: 0,
+    portrait_y_down: 0,
+    face_side_left: 20,
+    face_side_right: 20,
+    face_bottom: 20,
     text_without_face: 40,
     text_with_face: 10
   }
@@ -176,19 +208,15 @@ class Window_Message
   #  character_wait_var: 表示两个字符之间等待时间的变量
   #    # 超过 15 按 15 处理
   #  escape: 控制符
-  #    shake: 抖动立绘
-  #      # 可以带个参数表示抖动方向，默认为 H 表示横向，V 表示纵向
-  #        # 如【\D[V]】
-  #        # 若希望纵横同时进行，则使用数字表示【横向：纵向】的抖动幅度比例
-  #        # 如【\D[0.5]】
-  #      # 可以再带一个参数表示抖动幅度，默认为 1
-  #        # 如【\D[V,2]】
-  #      # 还可以带一个参数表示抖动抖动速度，默认为 10
-  #        # 如【\D[V,2,20]】
-  #      # 还可以再带一个参数表示抖动持续时间，默认为 15
-  #        # 如【\D[V,2,20,60]】
-  #    dialog_shake: 抖动对话框
+  #    shake: 抖动立绘，参数：抖动对象,半周期,次数,幅度
+  #      # 缺省参数为 x,5,3,5
+  #      # 抖动对象：x 或 y 或 opacity（不透明度）
+  #      # 半周期（帧）和次数（次）和幅度顾名思义
+  #      # 幅度的单位是像素（对于 x 和 y）或者取值0~255（对于 opacity）
+  #      # 例：【\d】【\d[x,10]】【\d[y,7,6,-15]】【\d[opacity,30,6,128]】
+  #    shake_dialog: 抖动对话框
   #      # 参数配置同 shake
+  #    wait_for_shake_complete: 等待抖动完成
   #    switch: 切换立绘，参数为立绘图编号或全称，如【\S[6]】【\S[AgnesC_L0]】
   #    se: 播放音效(SE)，参数为音效文件名，不带拓展名，如【\X[Absorb1]】
   #      # 也可以带上一个额外参数表示音量，如【\X[Absorb1,100]】
@@ -199,6 +227,7 @@ class Window_Message
     escape: {
       shake: 'D',
       shake_dialog: 'Z',
+      wait_for_shake_complete: 'W',
       switch: 'S',
       se: 'X'
     }
@@ -222,56 +251,46 @@ class Window_Message
   }
 
   'Edit Anything Below At Your Own Risk'
+  'Edit Anything Below At Your Own Risk'
+  'Edit Anything Below At Your Own Risk'
   
   module SpriteContainer
     
     def clear_shake
-      @shake_align = 0
-      @shake_power = 0
-      @shake_speed = 0
-      @shake_duration = 0
-      @shake_direction = 1
-      @shake = 0
-    end
-
-    def start_shake param
-      params = param.split ','
-      @shake_align = (params[0] ||  'H').strip
-      if @shake_align =~ /^[HV]$/i
-        @shake_align = @shake_align.upcase.to_sym
-      else
-        @shake_align = @shake_align.to_i
-      end
-      @shake_power    = (params[1] ||  1).to_i
-      @shake_speed    = (params[2] || 10).to_i
-      @shake_duration = (params[3] || 15).to_i
-    end
-
-    def update_shake
-      delta = (@shake_power * @shake_speed * @shake_direction) / 10.0
-      if @shake_duration <= 1 && @shake * (@shake + delta) < 0
-        @shake = 0
-      else
-        @shake += delta
-      end
-      @shake_direction = -1 if @shake > @shake_power * 2
-      @shake_direction = 1 if @shake < - @shake_power * 2
-      @shake_duration -= 1
+      @shake = { x: [], y: [], opacity: [] }
     end
 
     def shaking?
-      @shake_duration > 0 || @shake != 0
+      !@shake.values.all?(&:empty?)
+    end
+
+    def update_shake sprite
+      sprite.ox = @shake[:x].pop || 0
+      sprite.oy = @shake[:y].pop || 0
+      sprite.opacity = @shake[:opacity].pop || 255
+    end
+
+    def start_shake param
+      type, halfperiod, count, amplitude = param.split ','
+      type       = (type       || :x).downcase.to_sym
+      halfperiod = (halfperiod || 5).to_i
+      count      = (count      || 3).to_i
+      amplitude  = (amplitude  || 5).to_i
+      if type == :opacity
+        list = shaker1d halfperiod, count, amplitude, &Math.method(:cos)
+        list.map!{ |v| v + 255 - amplitude }
+      else
+        list = shaker1d halfperiod, count, amplitude, &Math.method(:sin)
+      end
+      @shake[type] = list
     end
     
-    def apply_shake sprite
-      if @shake_align == :H
-        sprite.ox = @shake
-      elsif @shake_align == :V
-        sprite.oy = @shake
-      else
-        sprite.ox = @shake*@shake_align
-        sprite.oy = @shake
+    def shaker1d halfperiod, count, amplitude
+      period = 2*halfperiod
+      list = period.times.map do |p|
+        amplitude*yield(2*Math::PI*p/period)
       end
+      list*count
     end
   end
 
@@ -332,8 +351,7 @@ class Window_Message
         state_end = @update_frame_count >= Fading[:dialogbox_out]
       else
         if shaking?
-          update_shake
-          apply_shake @sprite
+          update_shake @sprite
         end
       end
       if state_end
@@ -415,20 +433,20 @@ class Window_Message
     end
 
     def load_portrait
-      @sprite.bitmap = Cache.portrait @face_name, @face_index, @frame
+      @sprite.bitmap = Cache.portrait @face_name, @face_index, @frame, @right
       prepare_helper
       adjust_placement
     end
 
     def adjust_placement
       if @right
-        self.x = Graphics.width - width
+        self.x = Graphics.width - width + Offset[:portrait_x_back]
         self.x += Interactive[:back_pixel] if weakened?
       else
-        self.x = 0
+        self.x = -Offset[:portrait_x_back]
         self.x -= Interactive[:back_pixel] if weakened?
       end
-      self.y = Graphics.height - height
+      self.y = Graphics.height - height + Offset[:portrait_y_down]
       self.y += Interactive[:down_pixel] if weakened?
     end
 
@@ -508,8 +526,7 @@ class Window_Message
         end
       else
         if shaking?
-          update_shake
-          apply_shake @sprite
+          update_shake @sprite
         else
           update_anime unless anime_disabled?
         end
@@ -560,11 +577,11 @@ class Window_Message
 
     def get_portrait_dim
       dimness = Interactive[:weaken_rate]
-      Cache.portrait_dim @face_name, @face_index, @frame, dimness
+      Cache.portrait_dim @face_name, @face_index, @frame, @right, dimness
     end
 
     def get_portrait_blur
-      Cache.portrait_blur @face_name, @face_index, @frame
+      Cache.portrait_blur @face_name, @face_index, @frame, @right
     end
 
     def do_weakening
@@ -1076,6 +1093,8 @@ class Window_Message
     when Text[:escape][:shake_dialog].upcase
       param = obtain_escape_param_string text
       @dialogbox.start_shake param
+    when Text[:escape][:wait_for_shake_complete].upcase
+      Fiber.yield while @dialogbox.shaking? || @portraits.any?(&:shaking?)
     when Text[:escape][:switch].upcase
       param = obtain_escape_param_string text
       if param =~ /^\d+$/
@@ -1165,29 +1184,50 @@ end
 
 module Cache
 
-  def self.portrait name, index, frame
-    filename = generate_portrait_filename name, index, frame
-    load_bitmap PortraitFolder, filename
-  end
-
-  def self.portrait_dim name, index, frame, dimness
+  def self.portrait name, index, frame, right
     filename = generate_portrait_filename name, index, frame
     filename = PortraitFolder + filename
-    key = [filename, :dim, dimness]
+    key = [filename, right]
     unless include? key
-      @cache[key] = normal_bitmap(filename).clone
+      begin
+        @cache[key] = normal_bitmap(filename)
+      rescue Errno::ENOENT
+        src = face name
+        rect = Rect.new index % 4 * 96, index / 4 * 96, 96, 96
+        right = right ? "right" : "left"
+        right = "face_side_" + right
+        right = right.to_sym
+        side_padding = Window_Message::Offset[right]
+        bottom_padding = Window_Message::Offset[:face_bottom]
+        bmp = Bitmap.new 2*side_padding + 96, bottom_padding + 96
+        bmp.blt side_padding, 0, src, rect
+        src.dispose
+        @cache[key] = bmp
+      end
+    end
+    @cache[key]
+  end
+
+  def self.portrait_dim name, index, frame, right, dimness
+    filename = generate_portrait_filename name, index, frame
+    filename = PortraitFolder + filename
+    key = [filename, :dim, dimness, right]
+    unless include? key
+      bmp = portrait name, index, frame, right
+      @cache[key] = bmp.clone
       tone = Array.new 3, -dimness
       @cache[key].change_tone *tone
     end
     @cache[key]
   end
 
-  def self.portrait_blur name, index, frame
+  def self.portrait_blur name, index, frame, right
     filename = generate_portrait_filename name, index, frame
     filename = PortraitFolder + filename
-    key = [filename, :blur]
+    key = [filename, :blur, right]
     unless include? key
-      @cache[key] = normal_bitmap(filename).clone
+      bmp = portrait name, index, frame, right
+      @cache[key] = bmp.clone
       @cache[key].blur
     end
     @cache[key]
