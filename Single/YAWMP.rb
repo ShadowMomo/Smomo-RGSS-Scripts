@@ -2,6 +2,7 @@
 # Yet Another Window Message with Portrait
 # Esphas
 #
+# v4.1.2 2018.04.02 bug fix: anime --x--> face image
 # v4.1.1 2018.04.01 new feature: when missing portrait, use face image instead
 # v4.1.0 2018.04.01 happy fool's day! I decide to change the version number to
 #                   v4.1.0, but actually not much changes are made:
@@ -663,8 +664,7 @@ class Window_Message
 
     def anime_limit_reached?
       stop_var = get_game_variable Anime[:stop_var], 0
-      repeat_var = get_game_variable Anime[:repeat_var], 1
-      repeat_var =  repeat_var - 1
+      repeat_var = get_game_variable Anime[:repeat_var], 0
       repeat_var = Float::INFINITY if repeat_var.zero?
       @anime_repeat_count == repeat_var && @frame >=  stop_var ||
       @anime_repeat_count  > repeat_var
@@ -685,10 +685,14 @@ class Window_Message
     end
 
     def load_next_frame
-      load_portrait
-      return true
-    rescue Errno::ENOENT
-      return false
+      file = Cache.generate_portrait_filename @face_name, @face_index, @frame
+      file = Cache::PortraitFolder + file
+      if %w[.png .jpg .bmp].any?{ |ext| FileTest.exist? file + ext }
+        load_portrait
+        return true
+      else
+        return false
+      end
     end
 
     def dispose
