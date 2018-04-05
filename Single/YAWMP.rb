@@ -2,6 +2,7 @@
 # Yet Another Window Message with Portrait
 # Esphas
 #
+# v4.1.3 2018.04.05 shakes will abort when message ends
 # v4.1.2 2018.04.02 bug fix: anime --x--> face image
 # v4.1.1 2018.04.01 new feature: when missing portrait, use face image instead
 # v4.1.0 2018.04.01 happy fool's day! I decide to change the version number to
@@ -16,7 +17,7 @@
 # v2.0.0 2017.07.21 release
 #
 # https://github.com/ShadowMomo/Smomo-RGSS-Scripts/blob/master/Single/YAWMP.rb
-# http://rm.66rpg.com/forum.php?mod=viewthread&tid=401822
+# https://rpg.blue/forum.php?mod=viewthread&tid=401822
 
 ##
 # 前置
@@ -95,11 +96,11 @@ class Window_Message
   #  deco: 有两个字符串的数组，名字会放置在这两个字符串中间
   #  color: 名字的颜色
   #    default: 默认颜色
-  #    face: 按脸图判断的特殊颜色
-  #      'abc' => 4: 以 abc 开头的脸图的名字使用 4 号颜色
+  #    face: 按脸图文件名判断的特殊颜色
+  #      'abc' => 4: 文件名以 abc 开头的脸图的名字使用 4 号颜色
   #      # 字母不区分大小写
   #    name: 按文字字面判断的特殊颜色
-  #      '德国士兵' => 6: 以 德国士兵 开头的名字用 7 号颜色
+  #      '路人' => 3: 以 路人 开头的名字用 3 号颜色，比如路人甲之类
   #      # 字母区分大小写
   #    # 优先依据脸图的判断结果，脸图无匹配的情况采用字面匹配
   #    # 均无匹配才使用默认颜色
@@ -261,14 +262,19 @@ class Window_Message
       @shake = { x: [], y: [], opacity: [] }
     end
 
+    def abort_shake
+      clear_shake
+      update_shake
+    end
+
     def shaking?
       !@shake.values.all?(&:empty?)
     end
 
-    def update_shake sprite
-      sprite.ox = @shake[:x].pop || 0
-      sprite.oy = @shake[:y].pop || 0
-      sprite.opacity = @shake[:opacity].pop || 255
+    def update_shake
+      @sprite.ox = @shake[:x].pop || 0
+      @sprite.oy = @shake[:y].pop || 0
+      @sprite.opacity = @shake[:opacity].pop || 255
     end
 
     def start_shake param
@@ -352,7 +358,7 @@ class Window_Message
         state_end = @update_frame_count >= Fading[:dialogbox_out]
       else
         if shaking?
-          update_shake @sprite
+          update_shake
         end
       end
       if state_end
@@ -527,7 +533,7 @@ class Window_Message
         end
       else
         if shaking?
-          update_shake @sprite
+          update_shake
         else
           update_anime unless anime_disabled?
         end
@@ -1003,8 +1009,10 @@ class Window_Message
 
   def close_and_wait
     clear_portrait_flags
+    @dialogbox.abort_shake
     @dialogbox.state = :fading_out
     @portraits.each do |portrait|
+      portrait.abort_shake
       portrait.state = :fading_out
     end
     close
@@ -1063,6 +1071,10 @@ class Window_Message
 
   def new_page text, pos
     contents.clear
+    @dialogbox.abort_shake
+    @portraits.each do |portrait|
+      portrait.abort_shake
+    end
     @dialogbox.load_skin
     update_dialog_validation
     refresh_portraits
