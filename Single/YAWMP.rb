@@ -2,6 +2,9 @@
 # Yet Another Window Message with Portrait
 # Esphas
 #
+# v4.2.1 2018.04.08 ...and Interactive.weaken_type now supports variable
+# v4.2.0 2018.04.08 new features: change dialog skin according to character name
+#                               & new interactive weaken type: exit
 # v4.1.3 2018.04.05 shakes will abort when message ends
 # v4.1.2 2018.04.02 bug fix: anime --x--> face image
 # v4.1.1 2018.04.01 new feature: when missing portrait, use face image instead
@@ -175,7 +178,7 @@ class Window_Message
     portrait_y_down: 0,
     face_side_left: 20,
     face_side_right: 20,
-    face_bottom: 20,
+    face_bottom: 12,
     text_without_face: 40,
     text_with_face: 10
   }
@@ -189,6 +192,8 @@ class Window_Message
   #    # :dim     变暗
   #    # :opacity 透明
   #    # :blur    模糊
+  #    # :exit    退出画面
+  #    # 数字则表示变量，变量的值依次为 0 1 2 ... 时表示采用对应的上述方式
   #  weaken_rate: 立绘弱化的程度
   #    # 变暗时，0 为不变，255 为全黑
   #    # 透明时，0 为不变，255 为完全透明
@@ -199,7 +204,7 @@ class Window_Message
     enable_switch: 87,
     host_mode_switch: 88,
     weaken_time: 10,
-    weaken_type: :dim,
+    weaken_type: 0,
     weaken_rate: 100,
     down_pixel: 0,
     back_pixel: 10
@@ -240,9 +245,31 @@ class Window_Message
   #  comp: 识别同一角色时比较前多少个字母
   #    # 字母不区分大小写
   #  adjust_choice_switch: 开关打开时，选项显示在立绘的另一侧
+  #  name_with_skin: 根据角色名字或文件名自动换对话框皮肤
+  #    revert: 自动更换之后，是否在此对话结束时换回原皮肤
+  #    face: 按脸图文件名判断皮肤
+  #      'abc' => 4: 文件名以 abc 开头的脸图使用 4 号皮肤
+  #      # 字母不区分大小写
+  #    name: 按文字字面判断皮肤
+  #      '路人' => 3: 以 路人 开头的名字用 3 号皮肤，比如路人甲之类
+  #      # 字母区分大小写
+  #      # 当 Name.diable_switch 打开，即禁用第一行识别为名字时，此处设置不生效
+  #    # 优先依据脸图的判断结果，脸图无匹配的情况采用字面匹配
+  #    # 均无匹配才使用 Skin.var 指定的皮肤
   Misc = {
     comp: 3,
-    adjust_choice_switch: 89
+    adjust_choice_switch: 89,
+    name_with_skin: {
+      revert: true,
+      face: {
+        'Agn' => 2,
+        'def' => 3,
+        'Gal' => 5,
+      },
+      name: {
+        '路人' => 1,
+      }
+    }
   }
 
   ##
@@ -306,6 +333,7 @@ class Window_Message
     include SpriteContainer
 
     attr_accessor :state
+    attr_accessor :override_skin
 
     def get_game_variable id, default
       id.zero? ? default : $game_variables[id]
@@ -315,6 +343,7 @@ class Window_Message
       @sprite = Sprite.new
       @sprite.opacity = 0
       @state = nil
+      @override_skin = nil
       @update_frame_count = 0
       load_skin
       clear_shake
@@ -322,7 +351,9 @@ class Window_Message
 
     def load_skin
       skin = Skin[:basename]
-      index = get_game_variable Skin[:var], 0
+      index = @override_skin || get_game_variable(Skin[:var], 0)
+      @override_skin = nil
+      $game_variables[Skin[:var]] = index unless Misc[:name_with_skin][:revert]
       skin = "#{skin}#{index}" if index > 0
       @sprite.bitmap = Cache.system skin
       @valid = true
@@ -415,6 +446,15 @@ class Window_Message
     def get_game_switch id
       id.zero? ? false : $game_switches[id]
     end
+    
+    def weaken_type
+      wt = Interactive[:weaken_type]
+      if wt.is_a? Symbol
+        wt
+      else
+        [:dim, :opacity, :blur, :exit][get_game_variable(wt, 0)]
+      end
+    end
 
     def initialize face_name, face_index, guest = false
       @face_name = face_name
@@ -474,12 +514,13 @@ class Window_Message
 
     def prepare_helper
       @helper.mirror = @sprite.mirror
-      case Interactive[:weaken_type]
+      case weaken_type
       when :dim
         @helper.bitmap = get_portrait_dim
       when :opacity
       when :blur
         @helper.bitmap = get_portrait_blur
+      when :exit
       end
     end
 
@@ -592,9 +633,12 @@ class Window_Message
     end
 
     def do_weakening
+      if weaken_type == :exit
+        return @state = :fading_out
+      end
       return if weakened?
       progress = @update_frame_count.to_f / Interactive[:weaken_time]
-      case Interactive[:weaken_type]
+      case weaken_type
       when :dim
         blending_civet_cat_and_prince_edward progress
       when :opacity
@@ -618,7 +662,7 @@ class Window_Message
     def do_strengthening
       return unless weakened?
       progress = @update_frame_count.to_f / Interactive[:weaken_time]
-      case Interactive[:weaken_type]
+      case weaken_type
       when :dim
         blending_civet_cat_and_prince_edward 1-progress
       when :opacity
@@ -1043,19 +1087,22 @@ class Window_Message
       matched = false
       face_name = $game_message.face_name
       Name[:color][:face].each do |match, mcolor|
-        next if match == :default
         if face_name.downcase.start_with? match.downcase
           color = mcolor
           break matched = true
         end
       end
       Name[:color][:name].each do |match, mcolor|
-        next if match == :default
         if ls[0].start_with? match
           color = mcolor
           break matched = true
         end
       end unless matched
+      Misc[:name_with_skin][:name].each do |match, mskin|
+        if ls[0].start_with? match
+          break @dialogbox.override_skin = mskin
+        end
+      end
       ls[0] = "\e>\ec[#{color}]#{ldeco}#{ls[0]}#{rdeco}\ec[0]"
       text = ls.join ?\n + ?\s * Name[:indent]
     end
@@ -1074,6 +1121,11 @@ class Window_Message
     @dialogbox.abort_shake
     @portraits.each do |portrait|
       portrait.abort_shake
+    end
+    Misc[:name_with_skin][:face].each do |match, mskin|
+      if $game_message.face_name.downcase.start_with? match.downcase
+        break @dialogbox.override_skin = mskin
+      end
     end
     @dialogbox.load_skin
     update_dialog_validation
