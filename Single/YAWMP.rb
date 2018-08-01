@@ -40,6 +40,11 @@ module YAWMP
   # - 原则上，不为不看这些注释的人提供任何技术支持
   # -- 但是你可以用金钱来挑战这条原则，钱要多
   # -- 开玩笑的，给钱我也会咕咕咕
+  
+  ##
+  # 字体及大小
+  Font.default_name = "SimHei"
+  Font.default_size = 20
 
   ##
   # 对话框
@@ -176,11 +181,15 @@ module YAWMP
         # 若使用字符串，则代表“匹配名字开头”
         # 若使用正则表达式，则直接进行匹配
         '以此开头' => 3,
+        '路人' => 3,
         /正则匹配/ => 6,
       },
       face: {
         # 依据脸图文件名决定的名字颜色，优先于默认颜色和名字匹配
         '以此开头' => 3,
+        'Agn' => 2,
+        'def' => 7,
+        'Gal' => 5,
         /正则匹配/ => 6,
         /^esphas$/ => 7,
       }
@@ -808,23 +817,27 @@ class YAWMP::C::Portrait < YAWMP::C::SpriteContainer
     return if @state == :out
     return if @animation[:stopped]
     if @animation[:max_loops] > 0 && # finite
-      @animation[:loops] == @animation[:max_loops] && # last loop
+      @animation[:loops] > @animation[:max_loops] && # last loop
       @animation[:frame] == @animation[:final_frame] # last frame
       @animation[:stopped] = true
       return
     end
     @animation[:counter] += 1
-    if YAWMP.has_portrait? @name, @index, @animation[:frame] + 1
+    if @animation[:frame] > 0
       # to next frame
       if @animation[:counter] >= @animation[:interval]
         @animation[:counter] = 0
         @animation[:frame] += 1
       end
+      unless YAWMP.has_portrait? @name, @index, @animation[:frame]
+        # to first frame
+        @animation[:frame] = 0
+      end
     else
       # to next loop
       if @animation[:counter] >= @animation[:cached_loop_interval]
         @animation[:counter] = 0
-        @animation[:frame] = 0
+        @animation[:frame] = 1
         @animation[:loops] += 1
         loop_interval = @animation[:loop_interval]
         @animation[:cached_loop_interval] =
