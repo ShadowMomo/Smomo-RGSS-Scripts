@@ -906,13 +906,10 @@ class YAWMP::C::Portrait < YAWMP::C::SpriteContainer
       @animation = {
         frame: 0,
         loops: 0,
-        interval: YAWMP.get_variable(YAWMP::Dynamic[:var_interval]),
+        interval: animation_interval,
         max_loops: YAWMP.get_variable(YAWMP::Dynamic[:var_max_loops]),
         final_frame: YAWMP.get_variable(YAWMP::Dynamic[:var_final_frame]),
-        loop_interval:
-          YAWMP::Dynamic[:var_loop_interval].map do |v|
-            YAWMP.get_variable v
-          end,
+        loop_interval: animation_loop_interval,
         counter: 0,
         stopped: false
       }
@@ -921,6 +918,20 @@ class YAWMP::C::Portrait < YAWMP::C::SpriteContainer
         loop_interval[0] - loop_interval[1] +
         (2*loop_interval[1] + 1).times.to_a.sample
     end
+  end
+
+  def animation_interval
+    interval = YAWMP.get_variable YAWMP::Dynamic[:var_interval]
+    interval = 5 if interval.zero?
+    interval
+  end
+
+  def animation_loop_interval
+    loop_interval = YAWMP::Dynamic[:var_loop_interval].map do |v|
+      YAWMP.get_variable v
+    end
+    loop_interval[0] = 120 if loop_interval[0].zero?
+    loop_interval
   end
 
   def reset_mirror
