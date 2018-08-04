@@ -44,7 +44,7 @@ module YAWMP
   ##
   # 字体及大小
   Font.default_name = "SimHei"
-  Font.default_size = 20
+  Font.default_size = 18
 
   ##
   # 对话框
@@ -104,9 +104,17 @@ module YAWMP
     },
     text: {
       # 文本
-      plain:    40, # 未使用立绘或脸图时的左边距
-      portrait: 10, # 左侧有立绘时的左边距，相对于立绘的右边缘
+      plain:    80, # 未使用立绘或脸图时的左边距，相对于屏幕左侧
+      portrait:  0, # 左侧有立绘时的左边距，相对于立绘的右边缘
       face:      5, # 左侧有脸图时的左边距，相对于脸图的右边缘
+      y_offset:  0, # 纵向偏移，正值向下，相对于对话框
+      # - 比起修改此处 y_offset，更推荐直接修改对话框皮肤的图像文件
+    },
+    dialogbox: {
+      # 对话框
+      x_offset: 0, # 横向偏移，正值向右
+      y_offset: 0, # 纵向偏移，正值向下
+      # - 同样的，比起修改这里的 offset，更推荐直接修改皮肤的图像文件
     },
     # 杂项
     swi_under_dialogbox: 84, # 指示立绘置于对话框之下的开关
@@ -199,8 +207,9 @@ module YAWMP
       name: {
         # 依据名字决定
         '以此开头' => 3,
+        '精神正常' => 3,
+        '成熟稳重' => 4,
         /正则匹配/ => 1,
-        /测试员/   => 5,
       },
       face: {
         # 依据脸图文件名决定
@@ -293,21 +302,17 @@ end
 
 class Window_Message
 
+  alias :yawmp_initialize :initialize
   def initialize
-    super(0, 0, window_width, window_height)
-    self.z = 200
-    self.openness = 0
-    create_all_windows
-    create_back_bitmap
-    create_back_sprite
+    yawmp_initialize
+    self.x += YAWMP::Layout[:dialogbox][:x_offset]
     create_dialogbox
     create_portraits
-    clear_instance_variables
   end
 
   def create_dialogbox
     @dialogbox = YAWMP::C::Dialogbox.new
-    @dialogbox.x = 0
+    @dialogbox.x = x
     @dialogbox.z = z - 1
   end
 
@@ -355,6 +360,12 @@ class Window_Message
     @background = $game_message.background
     @dialogbox.visible = false
     self.opacity = 0
+  end
+
+  alias :yawmp_update_placement :update_placement
+  def update_placement
+    yawmp_update_placement
+    self.y += YAWMP::Layout[:dialogbox][:y_offset]
   end
 
   def process_all_text
@@ -445,6 +456,7 @@ class Window_Message
   def open_and_wait
     @dialogbox.enter
     open
+    @dialogbox.skip if @dialogbox.shaking?
     Fiber.yield until open? && !@dialogbox.busy?
   end
 
@@ -515,8 +527,10 @@ class Window_Message
     else
       new_line_x = YAWMP::Layout[:text][:plain]
     end
+    new_line_x -= self.padding
+    new_line_x -= self.x # relative to portrait/face/screen instead of dialogbox
     pos[:x] = new_line_x
-    pos[:y] = 0
+    pos[:y] = YAWMP::Layout[:text][:y_offset]
     pos[:new_x] = new_line_x
     pos[:height] = calc_line_height(text)
     clear_flags
@@ -592,7 +606,9 @@ class Window_Message
   def input_choice
     @choice_window.start
     if YAWMP.get_switch YAWMP::Layout[:swi_choice_opposite]
-      @choice_window.x = 0 if @portraits.current_right
+      side = @portraits.opposite_side @portraits.active_side
+      @portraits.clear_side side
+      @choice_window.x = 0 if side == :left
     end
     Fiber.yield while @choice_window.active
   end
@@ -683,12 +699,16 @@ class YAWMP::C::SpriteContainer
     !@sequence.values.all?(&:empty?)
   end
 
+  def shaking?
+    @state == :shaking
+  end
+
   def dispose
     @sprite.dispose
   end
 
   def shake param
-    return unless @state == :in
+    return unless @state == :in || :shaking
     @state = :shaking
     type, halfperiod, count, amplitude = param.split ','
     type       = (type       || :x).downcase.to_sym
@@ -1136,6 +1156,10 @@ class YAWMP::C::PortraitManager
       :left
     end
   end
+  
+  def opposite_side side
+    @opposite_side[side]
+  end
 
   def push name, index
     case mode
@@ -1150,20 +1174,20 @@ class YAWMP::C::PortraitManager
 
   def push_normal name, index
     side = major_side
-    clear_side @opposite_side[side]
+    clear_side opposite_side(side)
     push_to_side name, index, side
   end
 
   def push_turn name, index
     side = major_side
-    oside = @opposite_side[side]
+    oside = opposite_side side
     if @current[side] # major side is filled
       if @current[oside] # both sides are filled
         if YAWMP.same_character? name, @current[@active].name
           # active side remains active
         else
           deactivate @active
-          @active = @opposite_side[@active]
+          @active = opposite_side @active
         end
       else # opposite side is empty
         if YAWMP.same_character? name, @current[side].name
@@ -1190,7 +1214,7 @@ class YAWMP::C::PortraitManager
 
   def push_host name, index
     side = major_side
-    oside = @opposite_side[side]
+    oside = opposite_side side
     if @current[side] # has host
       if YAWMP.same_character? name, @current[side].name # is host
         deactivate oside
@@ -1266,28 +1290,24 @@ class YAWMP::C::PortraitManager
     end
   end
 
-  def active_portrait
+  def active_side
     side = major_side
     case mode
     when :normal
-      @current[side]
-    when :turn
-      if @current[side] && @current[@opposite_side[side]]
-        @current[@active]
+      side
+    else # :turn, :host
+      if @current[side] && @current[opposite_side side]
+        @active
       elsif @current[side]
-        @current[side]
+        side
       else
-        @current[@opposite[side]]
-      end
-    when :host
-      if @current[side] && @current[@opposite_side[side]]
-        @current[@active]
-      elsif @current[side]
-        @current[side]
-      else
-        @current[@opposite_side[side]]
+        opposite_side side
       end
     end
+  end
+
+  def active_portrait
+    @current[active_side]
   end
 
   def current_left
