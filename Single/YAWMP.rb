@@ -456,7 +456,8 @@ class Window_Message
   def open_and_wait
     @dialogbox.enter
     open
-    @dialogbox.skip if @dialogbox.shaking?
+    @dialogbox.skip_shake
+    @portraits.skip_shake
     Fiber.yield until open? && !@dialogbox.busy?
   end
 
@@ -502,10 +503,11 @@ class Window_Message
     reset_font_settings
     name, index = $game_message.face_name, $game_message.face_index
     @portraits.push name, index
+    # here, do not take the "exiting" portraits into consideration
     if YAWMP.get_switch YAWMP::Text[:swi_disable_skip]
-      Fiber.yield while @portraits.busy?
+      Fiber.yield while @portraits.current_busy?
     else
-      while @portraits.busy?
+      while @portraits.current_busy?
         if Input.press? YAWMP::Text[:skip_button]
           @portraits.skip
           break
@@ -693,6 +695,10 @@ class YAWMP::C::SpriteContainer
     if @intermediate_states.key? @state
       @state = @intermediate_states[@state]
     end
+  end
+
+  def skip_shake
+    skip if shaking?
   end
 
   def busy?
@@ -1131,22 +1137,39 @@ class YAWMP::C::PortraitManager
     end
   end
 
+  def all_slots
+    @current.values + @exiting.values
+  end
+
+  def all_portraits
+    all_slots.compact
+  end
+
   def dispose
-    (@current.values + @exiting.values).compact.each &:dispose
+    all_portraits.each &:dispose
   end
 
   def update
     @active = nil if mode == :normal
     dispose_exited
-    (@current.values + @exiting.values).compact.each &:update
+    all_portraits.each &:update
   end
 
   def skip
-    (@current.values + @exiting.values).compact.each &:skip
+    all_portraits.each &:skip
+  end
+
+  def skip_shake
+    all_portraits.each &:skip_shake
   end
 
   def busy?
-    (@current.values + @exiting.values).compact.any? &:busy?
+    all_portraits.any? &:busy?
+  end
+
+  def current_busy?
+    # for "current" only, no "exiting" ones
+    @current.values.compact.any? &:busy?
   end
 
   def major_side
