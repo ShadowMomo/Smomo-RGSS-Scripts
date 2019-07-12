@@ -2,6 +2,12 @@
 # Yet Another Window Message with Portrait
 # Esphas
 #
+# v5.1.0 2019.07.11 new feature:
+#                     specify different y offsets for firstline in different
+#                       dialog skins.
+#                   bug fixes:
+#                     crashes when trying to deactivate nothing;
+#                     wrong indent for first line.
 # v5.0.0 2018.07.24 reworked, and of course, fixed all known bugs
 #                   some settings have been changed
 #                   this version is completely compatable with RGD(v1.1.2+)
@@ -40,7 +46,7 @@ module YAWMP
   # - 原则上，不为不看这些注释的人提供任何技术支持
   # -- 但是你可以用金钱来挑战这条原则，钱要多
   # -- 开玩笑的，给钱我也会咕咕咕
-  
+
   ##
   # 字体及大小
   Font.default_name = "SimHei"
@@ -92,8 +98,8 @@ module YAWMP
       # 立绘
       left:          0, # 左边距
       right:         0, # 右边距
-      left_bottom:   0, # 左底边距
-      right_bottom:  0, # 右底边距
+      left_bottom:   -15, # 左底边距
+      right_bottom:  -15, # 右底边距
     },
     face: {
       # 脸图
@@ -109,11 +115,15 @@ module YAWMP
       face:      5, # 左侧有脸图时的左边距，相对于脸图的右边缘
       y_offset:  0, # 纵向偏移，正值向下，相对于对话框
       # - 比起修改此处 y_offset，更推荐直接修改对话框皮肤的图像文件
+      first_line: {
+        # 对话框皮肤编号 => 首行 y 偏移量
+        # 0 => 10,
+      }
     },
     dialogbox: {
       # 对话框
       x_offset: 0, # 横向偏移，正值向右
-      y_offset: 0, # 纵向偏移，正值向下
+      y_offset: 3, # 纵向偏移，正值向下
       # - 同样的，比起修改这里的 offset，更推荐直接修改皮肤的图像文件
     },
     # 杂项
@@ -127,7 +137,7 @@ module YAWMP
     swi_enable:    87, # 指示启用交替式对话的开关
     swi_host_mode: 88, # 指示交替式对话存在主持人的开关
     deactivation: { # 弱化非活跃角色立绘
-      type: :dim, # 弱化类型
+      type: 88, # 弱化类型
       # - 可选类型有四种
       # -- :dim     变暗
       # -- :opacity 半透明
@@ -167,7 +177,7 @@ module YAWMP
       switch_portrait:  'S', # 切换当前立绘的图形
       # - 参数为立绘图编号或全称，如【\S[6]】【\S[AgnesC_L0]】
       # - 为了防止各式各样的手滑，只允许切换同一角色的立绘，否则会主动报错
-      se: 'X' # 播放音效
+      se: 'X', # 播放音效
       # - 参数为音效文件名，不带拓展名，如【\X[Absorb1]】
       # - 也可以带上一个额外参数表示音量，如【\X[Absorb1,100]】
       # - 还可再带一个额外参数表示音调，如【\X[Absorb1,100,150]】
@@ -182,6 +192,10 @@ module YAWMP
     swi_disable: 85, # 禁用名字识别的开关
     deco: ['【', '】'], # 应用在名字两侧的装饰文字
     indent: 2, # 正文内容相对于名字的缩进量，以半角空格为单位
+    offset: {
+      # 对话框皮肤编号 => [x 偏移量, y 偏移量],
+      4 => [0, 20],
+    },
     color: {
       default: 6, # 默认名字颜色
       name: {
@@ -190,6 +204,7 @@ module YAWMP
         # 若使用正则表达式，则直接进行匹配
         '以此开头' => 3,
         '路人' => 3,
+        '笑点很低' => 3,
         /正则匹配/ => 6,
       },
       face: {
@@ -261,8 +276,7 @@ end
 
 module YAWMP
 
-  # actually this is the first time I introduce a version string here
-  VERSION = "5.0.0"
+  VERSION = "5.1.0"
 
   def self.get_variable id
     return 0 if id.zero?
@@ -295,7 +309,7 @@ module YAWMP
     end
     type
   end
-    
+
   module C
   end
 end
@@ -369,15 +383,34 @@ class Window_Message
   end
 
   def process_all_text
-    text = convert_escape_characters $game_message.all_text
-    skin_id = YAWMP.get_variable YAWMP::Dialogbox[:var_skin]
+    info = {
+      text: convert_escape_characters($game_message.all_text),
+      skin_id: YAWMP.get_variable(YAWMP::Dialogbox[:var_skin]),
+    }
+    info = update_info_before_open info
+    text = info[:text]
+    load_dialogbox info[:skin_id]
+    open_and_wait
+    pos = {}
+    new_page text, pos
+    draw_name_in_a_line info[:name], pos, *info[:offset] if info[:name_mode]
+    pos[:y] += info[:first_line]
+    process_character(text.slice!(0, 1), text, pos) until text.empty?
+  end
+
+  def update_info_before_open info
+    info[:name_mode] = false
+    info[:first_line] = 0
     if @background.zero? # normal background
       unless YAWMP.get_switch YAWMP::Name[:swi_disable]
-        ls = text.split "\n"
-        if ls[0] && !ls[0].empty?
-          ldeco = YAWMP::Name[:deco][0]
-          rdeco = YAWMP::Name[:deco][1]
+        ls = info[:text].split "\n"
+        ls << "" if ls.empty?
+        if !ls[0].empty?
+          info[:name_mode] = true
+          info[:offset] = [0, 0]
+          ldeco, rdeco = YAWMP::Name[:deco]
           color = YAWMP::Name[:color][:default]
+          skin_id = info[:skin_id]
           YAWMP::Name[:color][:name].each do |name, ncolor|
             if name.is_a? String
               if ls[0].start_with? name
@@ -430,16 +463,22 @@ class Window_Message
               end
             end
           end
-          ls[0] = "\e>\ec[#{color}]#{ldeco}#{ls[0]}#{rdeco}\ec[0]"
-          text = ls.join "\n" + "\s" * YAWMP::Name[:indent]
+          if YAWMP::Name[:offset].key? skin_id
+            info[:offset] = YAWMP::Name[:offset][skin_id]
+          end
+          info[:skin_id] = skin_id
+          info[:name] = "\e>\ec[#{color}]#{ldeco}#{ls[0]}#{rdeco}\ec[0]\n"
+          ls.shift
+          info[:text] = ls.map{|l|
+            "\s" * YAWMP::Name[:indent] + l
+          }.join "\n"
         end
       end
+      if YAWMP::Layout[:text][:first_line].key? info[:skin_id]
+        info[:first_line] = YAWMP::Layout[:text][:first_line][info[:skin_id]]
+      end
     end
-    load_dialogbox skin_id
-    open_and_wait
-    pos = {}
-    new_page text, pos
-    process_character(text.slice!(0, 1), text, pos) until text.empty?
+    info
   end
 
   def load_dialogbox skin_id
@@ -536,6 +575,14 @@ class Window_Message
     pos[:new_x] = new_line_x
     pos[:height] = calc_line_height(text)
     clear_flags
+  end
+
+  def draw_name_in_a_line name, pos, offset_x, offset_y
+    pos[:x] += offset_x
+    pos[:y] += offset_y
+    process_character(name.slice!(0, 1), name, pos) until name.empty?
+    pos[:x] -= offset_x
+    pos[:y] -= offset_y
   end
 
   alias :yawmp_process_escape_character :process_escape_character
@@ -1179,7 +1226,7 @@ class YAWMP::C::PortraitManager
       :left
     end
   end
-  
+
   def opposite_side side
     @opposite_side[side]
   end
@@ -1280,7 +1327,7 @@ class YAWMP::C::PortraitManager
     if type == :exit
       clear_side side
     else
-      @current[side].deactivate
+      @current[side].deactivate if @current[side]
     end
   end
 
