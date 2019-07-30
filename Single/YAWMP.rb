@@ -2,6 +2,9 @@
 # Yet Another Window Message with Portrait
 # Esphas
 #
+# v5.1.1 2019.07.30 bug fixes:
+#                     cannot read rgss3a encrypted archive
+#                     a typo in a method that nearly nobody uses
 # v5.1.0 2019.07.11 new feature:
 #                     specify different y offsets for firstline in different
 #                       dialog skins.
@@ -290,8 +293,14 @@ module YAWMP
 
   def self.has_portrait? name, index, frame
     filename = portrait_name name, index, frame
-    ["", ".png", ".jpg"].any? do |ext|
-      FileTest.exist? filename + ext
+    @cached_result ||= {}
+    key = [name, index, frame]
+    return @cached_result[key] if @cached_result.key? key
+    @cached_result[key] = begin
+      Cache.portrait name, index, frame
+      true
+    rescue Errno::ENOENT
+      false
     end
   end
 
@@ -674,7 +683,7 @@ module Cache
         @cache[key] = portrait name, index, frame
         @cache[key] = @cache[key].clone.blur
       else
-        @cache[key] = normal_bitmap filename
+        @cache[key] = load_bitmap '', filename
       end
     end
     @cache[key]
@@ -686,7 +695,7 @@ module Cache
       @cache[key] = face name
       @cache[key] = @cache[key].clone.blur
     end
-    @caceh[key]
+    @cache[key]
   end
 end
 
